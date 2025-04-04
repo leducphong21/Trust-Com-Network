@@ -16,6 +16,11 @@ function channel_command_group() {
     channel_up
     log "🏁 - Channel is ready."
 
+  elif [ "${COMMAND}" == "fetch-config" ]; then
+    log "Fetching channel config for \"${CHANNEL_NAME}\":"
+    fetch_channel_config
+    log "🏁 - Channel config fetched."
+
   else
     print_help
     exit 1
@@ -23,7 +28,6 @@ function channel_command_group() {
 }
 
 function channel_up() {
-
   register_org_admins
   enroll_org_admins
 
@@ -298,4 +302,25 @@ function join_channel_peer() {
     --connTimeout ${ORDERER_TIMEOUT} \
     --tls         \
     --cafile      ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+}
+
+function fetch_channel_config() {
+  push_fn "Fetching channel configuration for ${CHANNEL_NAME}"
+
+  # Đặt ngữ cảnh cho peer (ví dụ: peer1 của org1)
+  export_peer_context org1 peer1
+
+  # Lấy cấu hình kênh từ mạng
+  peer channel fetch config ${TEMP_DIR}/channel_config.pb \
+    -c ${CHANNEL_NAME} \
+    --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --tls \
+    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+
+  # (Tùy chọn) Chuyển đổi cấu hình từ .pb sang JSON để dễ đọc
+  configtxlator proto_decode --input ${TEMP_DIR}/channel_config.pb --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/channel_config.json
+
+  log "Channel config saved to ${TEMP_DIR}/channel_config.pb (protobuf) and ${TEMP_DIR}/channel_config.json (JSON)"
+
+  pop_fn
 }
