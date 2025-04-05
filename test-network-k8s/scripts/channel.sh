@@ -21,6 +21,11 @@ function channel_command_group() {
     fetch_channel_config
     log "🏁 - Channel config fetched."
 
+    elif [ "${COMMAND}" == "update-config" ]; then
+    log "Fetching channel config for \"${CHANNEL_NAME}\":"
+    update_channel_config
+    log "🏁 - Channel config fetched."
+
   else
     print_help
     exit 1
@@ -321,6 +326,76 @@ function fetch_channel_config() {
   configtxlator proto_decode --input ${TEMP_DIR}/channel_config.pb --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/channel_config.json
 
   log "Channel config saved to ${TEMP_DIR}/channel_config.pb (protobuf) and ${TEMP_DIR}/channel_config.json (JSON)"
+
+  pop_fn
+}
+
+
+function update_channel_config() {
+  push_fn "Updating channel configuration for ${CHANNEL_NAME}"
+
+  # Đặt ngữ cảnh cho peer của org1
+  export_peer_context org1 peer1
+
+  # Bước 1: Lấy cấu hình hiện tại
+  peer channel fetch config ${TEMP_DIR}/current_config_block.pb \
+    -c ${CHANNEL_NAME} \
+    --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --tls \
+    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+
+  # Bước 2: Giải mã sang JSON
+  configtxlator proto_decode --input ${TEMP_DIR}/current_config_block.pb \
+    --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/current_config.json
+
+  # Bước 3: Giả sử modified_config.json đã được chuẩn bị
+  if [ ! -f "${TEMP_DIR}/modified_config.json" ]; then
+    fatalln "Error: modified_config.json not found in ${TEMP_DIR}"
+  fi
+
+  # Bước 4: Chuyển đổi sang protobuf
+  configtxlator proto_encode --input ${TEMP_DIR}/current_config.json \
+    --type common.Config --output ${TEMP_DIR}/current_config.pb
+  configtxlator proto_encode --input ${TEMP_DIR}/modified_config.json \
+    --type common.Config --output ${TEMP_DIR}/modified_config.pb
+
+  # Bước 5: Tính toán delta
+  configtxlator compute_update --channel_id ${CHANNEL_NAME} \
+    --original ${TEMP_DIR}/current_config.pb \
+    --updated ${TEMP_DIR}/modified_config.pb \
+    --output ${TEMP_DIR}/config_update.pb
+
+  # Bước 6: Giải mã delta sang JSON
+  configtxlator proto_decode --input ${TEMP_DIR}/config_update.pb \
+    --type common.ConfigUpdate > ${TEMP_DIR}/config_update.json
+
+  # Bước 7: Bao bọc trong envelope
+  echo '{"payload":{"header":{"channel_header":{"channel_id":"'"${CHANNEL_NAME}"'", "type":2}},"data":{"config_update":'$(cat ${TEMP_DIR}/config_update.json)'}}}' | jq . > ${TEMP_DIR}/config_update_envelope.json
+  configtxlator proto_encode --input ${TEMP_DIR}/config_update_envelope.json \
+    --type common.Envelope --output ${TEMP_DIR}/config_update_envelope.pb
+
+  # Bước 8: Ký bằng org1admin (có quyền Writers)
+  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org1/users/org1admin/msp
+  peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+
+  # # Bước 8: Ký bằng org1admin (có quyền Writers)
+  # export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org2/users/org2admin/msp
+  # peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+
+  # # Bước 9: Ký thêm bằng org0admin (nếu cần cho chính sách Admins)
+  # export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org0/users/org0admin/msp
+  # peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+
+  # Bước 10: Gửi cập nhật với ngữ cảnh của org1admin (Writers)
+  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org1/users/org1admin/msp
+  peer channel update \
+    -f ${TEMP_DIR}/config_update_envelope.pb \
+    -c ${CHANNEL_NAME} \
+    --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --tls \
+    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+
+  log "Channel configuration for ${CHANNEL_NAME} has been updated successfully"
 
   pop_fn
 }
