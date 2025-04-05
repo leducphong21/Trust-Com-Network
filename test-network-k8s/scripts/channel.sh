@@ -375,19 +375,23 @@ function update_channel_config() {
     --type common.Envelope --output ${TEMP_DIR}/config_update_envelope.pb
 
   # Bước 8: Ký bằng org1admin (có quyền Writers)
-  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org1/users/org1admin/msp
-  peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+  # export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org1/users/org1admin/msp
+  # peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
 
   # # Bước 8: Ký bằng org1admin (có quyền Writers)
   # export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org2/users/org2admin/msp
   # peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
 
-  # # Bước 9: Ký thêm bằng org0admin (nếu cần cho chính sách Admins)
-  # export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org0/users/org0admin/msp
-  # peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+  # Bước 9: Ký thêm bằng org0admin (nếu cần cho chính sách Admins)
+  export_peer_context org0 orderer1
+  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org0/users/org0admin/msp
+  peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+
+
+  export_peer_context org2 peer1
 
   # Bước 10: Gửi cập nhật với ngữ cảnh của org1admin (Writers)
-  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org1/users/org1admin/msp
+  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org2/users/org2admin/msp
   peer channel update \
     -f ${TEMP_DIR}/config_update_envelope.pb \
     -c ${CHANNEL_NAME} \
