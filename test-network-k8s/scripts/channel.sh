@@ -21,10 +21,43 @@ function channel_command_group() {
     fetch_channel_config
     log "🏁 - Channel config fetched."
 
-    elif [ "${COMMAND}" == "update-config" ]; then
-    log "Fetching channel config for \"${CHANNEL_NAME}\":"
-    update_channel_config
-    log "🏁 - Channel config fetched."
+  elif [ "${COMMAND}" == "get-modify-config" ]; then
+    log "Getting and modifying config for \"${CHANNEL_NAME}\":"
+    get-modify-config
+    if [ $? -eq 0 ]; then
+      log "🏁 - Config fetched and prepared."
+    else
+      log "Failed to fetch or prepare config."
+    fi
+
+  elif [ "${COMMAND}" == "create-config-update-envelope" ]; then
+    log "Creating config update envelope for \"${CHANNEL_NAME}\":"
+    create-config-update-envelope
+    if [ $? -eq 0 ]; then
+      log "🏁 - Config update envelope created."
+    else
+      log "Failed to create config update envelope."
+    fi
+
+  elif [ "${COMMAND}" == "sign" ]; then
+    local org=$1
+    log "Signing config for \"${CHANNEL_NAME}\" with ${org}:"
+    sign "${org}"
+    if [ $? -eq 0 ]; then
+      log "🏁 - Config signed."
+    else
+      log "Failed to sign config."
+    fi
+
+  elif [ "${COMMAND}" == "update-config" ]; then
+    local org=$1
+    log "Updating config for \"${CHANNEL_NAME}\" with ${org}:"
+    update-config "${org}"
+    if [ $? -eq 0 ]; then
+      log "🏁 - Config updated."
+    else
+      log "Failed to update config."
+    fi
 
   else
     print_help
@@ -310,88 +343,238 @@ function join_channel_peer() {
 }
 
 function fetch_channel_config() {
+  # Log the start of fetching channel configuration
   push_fn "Fetching channel configuration for ${CHANNEL_NAME}"
 
-  # Đặt ngữ cảnh cho peer (ví dụ: peer1 của org1)
+  # Set the peer context to org1 peer1
   export_peer_context org1 peer1
 
-  # Lấy cấu hình kênh từ mạng
+  # Fetch the channel configuration block from the orderer
   peer channel fetch config ${TEMP_DIR}/channel_config.pb \
     -c ${CHANNEL_NAME} \
     --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
     --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
 
-  # (Tùy chọn) Chuyển đổi cấu hình từ .pb sang JSON để dễ đọc
+  # Decode the protobuf block into JSON format and extract the config
   configtxlator proto_decode --input ${TEMP_DIR}/channel_config.pb --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/channel_config.json
 
+  # Log the location where the config is saved
   log "Channel config saved to ${TEMP_DIR}/channel_config.pb (protobuf) and ${TEMP_DIR}/channel_config.json (JSON)"
 
+  # Log the completion of the function
   pop_fn
 }
 
 
-function update_channel_config() {
-  push_fn "Updating channel configuration for ${CHANNEL_NAME}"
+function get-modify-config() {
+  # Log the start of fetching and preparing channel configuration
+  push_fn "Fetching and preparing channel configuration for ${CHANNEL_NAME}"
 
-  # Đặt ngữ cảnh cho peer của org1
+  # Set the peer context to org1 peer1
   export_peer_context org1 peer1
 
-  # Bước 1: Lấy cấu hình hiện tại
+  # Fetch the current channel configuration block from the orderer
   peer channel fetch config ${TEMP_DIR}/current_config_block.pb \
     -c ${CHANNEL_NAME} \
     --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
     --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
 
-  # Bước 2: Giải mã sang JSON
+  # Decode the protobuf block into JSON format and extract the config
   configtxlator proto_decode --input ${TEMP_DIR}/current_config_block.pb \
     --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/current_config.json
 
-  # Bước 3: Giả sử modified_config.json đã được chuẩn bị
-  if [ ! -f "${TEMP_DIR}/modified_config.json" ]; then
-    fatalln "Error: modified_config.json not found in ${TEMP_DIR}"
+  # Log that the modified_config.json will be created or overwritten
+  log "Creating or overwriting modified_config.json with current_config.json"
+  
+  # Overwrite or create modified_config.json with the current config
+  cp -f ${TEMP_DIR}/current_config.json ${TEMP_DIR}/modified_config.json
+  if [ $? -ne 0 ]; then
+    # Log an error if the copy operation fails
+    log "Error: Failed to create or overwrite modified_config.json"
+    pop_fn
+    return 1
   fi
+  
+  # Log the location of the new/overwritten file and prompt for editing
+  log "modified_config.json created/overwritten at ${TEMP_DIR}/modified_config.json. Please edit it before proceeding."
 
-  # Bước 4: Chuyển đổi sang protobuf
+  # Log the completion of the function
+  pop_fn
+}
+
+function create-config-update-envelope() {
+  # Log the start of creating the configuration update envelope
+  push_fn "Creating configuration update envelope for ${CHANNEL_NAME}"
+
+  # Encode the current config JSON into protobuf format
   configtxlator proto_encode --input ${TEMP_DIR}/current_config.json \
     --type common.Config --output ${TEMP_DIR}/current_config.pb
+  
+  # Encode the modified config JSON into protobuf format
   configtxlator proto_encode --input ${TEMP_DIR}/modified_config.json \
     --type common.Config --output ${TEMP_DIR}/modified_config.pb
 
-  # Bước 5: Tính toán delta
+  # Compute the difference (delta) between current and modified configs
   configtxlator compute_update --channel_id ${CHANNEL_NAME} \
     --original ${TEMP_DIR}/current_config.pb \
     --updated ${TEMP_DIR}/modified_config.pb \
     --output ${TEMP_DIR}/config_update.pb
 
-  # Bước 6: Giải mã delta sang JSON
+  # Decode the delta protobuf into JSON format
   configtxlator proto_decode --input ${TEMP_DIR}/config_update.pb \
     --type common.ConfigUpdate > ${TEMP_DIR}/config_update.json
 
-  # Bước 7: Bao bọc trong envelope
+  # Create an envelope JSON with the config update and channel header
   echo '{"payload":{"header":{"channel_header":{"channel_id":"'"${CHANNEL_NAME}"'", "type":2}},"data":{"config_update":'$(cat ${TEMP_DIR}/config_update.json)'}}}' | jq . > ${TEMP_DIR}/config_update_envelope.json
+  
+  # Encode the envelope JSON into protobuf format
   configtxlator proto_encode --input ${TEMP_DIR}/config_update_envelope.json \
     --type common.Envelope --output ${TEMP_DIR}/config_update_envelope.pb
 
-  # Bước 8: Ký bằng org1admin (có quyền Writers)
-  # export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org1/users/org1admin/msp
-  # peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+  # Log the completion of the function
+  pop_fn
+}
 
-  # # Bước 8: Ký bằng org1admin (có quyền Writers)
-  # export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org2/users/org2admin/msp
-  # peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+function sign() {
+  local org=$1
+  # Log the start of signing the configuration envelope
+  log "Signing configuration envelope for ${CHANNEL_NAME}"
 
-  # Bước 9: Ký thêm bằng org0admin (nếu cần cho chính sách Admins)
-  export_peer_context org0 orderer1
-  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org0/users/org0admin/msp
+  # If an org is provided as an argument, use it directly
+  if [ -n "${org}" ]; then
+    selected_org="${org}"
+    log "Using provided organization: ${selected_org}"
+  else
+    # Check if running in an interactive terminal
+    if [ -t 0 ]; then
+      # Display the organization selection menu
+      log "Please select an organization to sign the configuration envelope:"
+      log "  1) org0"
+      log "  2) org1"
+      log "  3) org2"
+      log -n "Enter your choice (1-3): "
+      read choice
+
+      # Map the user's choice to an organization
+      case $choice in
+        1) selected_org="org0" ;;
+        2) selected_org="org1" ;;
+        3) selected_org="org2" ;;
+        *) log "Error: Invalid selection. Please choose a valid option (1-3)."
+           pop_fn
+           return 1 ;;
+      esac
+
+      # Log the selected organization
+      log "Selected organization: ${selected_org}"
+    else
+      # Log an error if not in an interactive terminal
+      log "Error: No interactive terminal detected. Please provide an organization (e.g., 'sign org0') or run in an interactive shell."
+      pop_fn
+      return 1
+    fi
+  fi
+
+  # Check if an organization was selected or provided
+  if [ -z "${selected_org}" ]; then
+    log "Error: No organization selected or provided"
+    pop_fn
+    return 1
+  fi
+
+  # Set the peer context and MSP based on the selected organization
+  if [ "${selected_org}" == "org0" ]; then
+    export_peer_context org0 orderer1
+  elif [ "${selected_org}" == "org1" ]; then
+    export_peer_context org1 peer1
+  elif [ "${selected_org}" == "org2" ]; then
+    export_peer_context org2 peer1
+  else
+    log "Error: Unsupported organization: ${selected_org}"
+    pop_fn
+    return 1
+  fi
+
+  # Set the MSP path for signing
+  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${selected_org}/users/${selected_org}admin/msp
+  
+  # Sign the configuration envelope
   peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
 
+  # Check if signing failed
+  if [ $? -ne 0 ]; then
+    log "Error: Failed to sign config envelope with ${selected_org}"
+    pop_fn
+    return 1
+  fi
 
-  export_peer_context org2 peer1
+  # Log successful signing
+  log "Successfully signed config envelope with ${selected_org}"
+  pop_fn
+}
 
-  # Bước 10: Gửi cập nhật với ngữ cảnh của org1admin (Writers)
-  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/org2/users/org2admin/msp
+function update-config() {
+  local org=$1
+  # Log the start of submitting the configuration update
+  log "Submitting channel configuration update for ${CHANNEL_NAME}"
+
+  # If an org is provided as an argument, use it directly
+  if [ -n "${org}" ]; then
+    selected_org="${org}"
+    log "Using provided organization: ${selected_org}"
+  else
+    # Check if running in an interactive terminal
+    if [ -t 0 ]; then
+      # Display the organization selection menu
+      log "Please select an organization to submit the configuration update:"
+      log "  1) org1"
+      log "  2) org2"
+      log -n "Enter your choice (1-2): "
+      read choice
+
+      # Map the user's choice to an organization
+      case $choice in
+        1) selected_org="org1" ;;
+        2) selected_org="org2" ;;
+        *) log "Error: Invalid selection. Please choose a valid option (1-2)."
+           pop_fn
+           return 1 ;;
+      esac
+
+      # Log the selected organization
+      log "Selected organization: ${selected_org}"
+    else
+      # Log an error if not in an interactive terminal
+      log "Error: No interactive terminal detected. Please provide an organization (e.g., 'update-config org1') or run in an interactive shell."
+      pop_fn
+      return 1
+    fi
+  fi
+
+  # Check if an organization was selected or provided
+  if [ -z "${selected_org}" ]; then
+    log "Error: No organization selected or provided"
+    pop_fn
+    return 1
+  fi
+
+  # Set the peer context and MSP based on the selected organization
+  if [ "${selected_org}" == "org1" ]; then
+    export_peer_context org1 peer1
+  elif [ "${selected_org}" == "org2" ]; then
+    export_peer_context org2 peer1
+  else
+    log "Error: Unsupported organization: ${selected_org}. Only org1 and org2 are allowed."
+    pop_fn
+    return 1
+  fi
+
+  # Set the MSP path for submitting the update
+  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${selected_org}/users/${selected_org}admin/msp
+  
+  # Submit the configuration update to the orderer
   peer channel update \
     -f ${TEMP_DIR}/config_update_envelope.pb \
     -c ${CHANNEL_NAME} \
@@ -399,7 +582,14 @@ function update_channel_config() {
     --tls \
     --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
 
-  log "Channel configuration for ${CHANNEL_NAME} has been updated successfully"
+  # Check if the update failed
+  if [ $? -ne 0 ]; then
+    log "Error: Failed to update config with ${selected_org}"
+    pop_fn
+    return 1
+  fi
 
+  # Log successful update
+  log "Channel configuration for ${CHANNEL_NAME} has been updated successfully"
   pop_fn
 }
