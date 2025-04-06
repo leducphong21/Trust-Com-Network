@@ -24,7 +24,7 @@ spec:
           command:
             - sh
             - -c
-            - "mkdir -p /mnt/fabric-org2/fabric/external_builders && cp -rv /opt/hyperledger/k8s_builder /mnt/fabric-org2/fabric/external_builders/"
+            - "mkdir -p /mnt/fabric-org2/fabric/external_builders && cp -rv /opt/hyperledger/k8s_builder /mnt/fabric-org1/fabric/external_builders/"
           volumeMounts:
             - name: fabric-org2-volume
               mountPath: /mnt/fabric-org2

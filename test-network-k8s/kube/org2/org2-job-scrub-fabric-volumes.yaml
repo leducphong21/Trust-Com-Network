@@ -30,4 +30,3 @@ spec:
         - name: fabric-org2-volume
           persistentVolumeClaim:
             claimName: fabric-org2
-

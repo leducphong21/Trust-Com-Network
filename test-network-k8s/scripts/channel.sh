@@ -94,7 +94,7 @@ function register_org_admin() {
   local id_secret=$3
   local ca_name=${org}-ca
 
-  echo "Registering org admin $username"
+  echo "Registering org admin $id_name"
 
   fabric-ca-client  register \
     --id.name       ${id_name} \
