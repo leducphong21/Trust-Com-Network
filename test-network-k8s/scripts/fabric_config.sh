@@ -39,9 +39,11 @@ function init_storage_volumes() {
     exit 1
   fi
 
-  cat kube/pvc-fabric-org0.yaml | envsubst | kubectl -n $ORG0_NS create -f - || true
-  cat kube/pvc-fabric-org1.yaml | envsubst | kubectl -n $ORG1_NS create -f - || true
-  cat kube/pvc-fabric-org2.yaml | envsubst | kubectl -n $ORG2_NS create -f - || true
+  cat kube/pvc-fabric-${ORDERER_NAME}.yaml | envsubst | kubectl -n $ORG0_NS create -f - || true
+  
+  for ORG in ${ORG_NAMES}; do
+    cat kube/pvc-fabric-${ORG}.yaml | envsubst | kubectl -n $ORG1_NS create -f - || true
+  done
 
   pop_fn
 }
