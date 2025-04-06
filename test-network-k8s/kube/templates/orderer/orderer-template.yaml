@@ -8,7 +8,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: org0-orderer2-tls-cert
+  name: {{ORDERER}}-orderer{{ORDERER_NUM}}-tls-cert
   namespace: ${NS}
 spec:
   isCA: false
@@ -17,28 +17,28 @@ spec:
     size: 256
   dnsNames:
     - localhost
-    - org0-orderer2
-    - org0-orderer2.${NS}.svc.cluster.local
-    - org0-orderer2.${DOMAIN}
-    - org0-orderer2-admin.${DOMAIN}
+    - {{ORDERER}}-orderer{{ORDERER_NUM}}
+    - {{ORDERER}}-orderer{{ORDERER_NUM}}.${NS}.svc.cluster.local
+    - {{ORDERER}}-orderer{{ORDERER_NUM}}.${DOMAIN}
+    - {{ORDERER}}-orderer{{ORDERER_NUM}}-admin.${DOMAIN}
   ipAddresses:
     - 127.0.0.1
-  secretName: org0-orderer2-tls-cert
+  secretName: {{ORDERER}}-orderer{{ORDERER_NUM}}-tls-cert
   issuerRef:
-    name: org0-tls-cert-issuer
+    name: {{ORDERER}}-tls-cert-issuer
 
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: org0-orderer2-env
+  name: {{ORDERER}}-orderer{{ORDERER_NUM}}-env
 data:
   FABRIC_CFG_PATH: /var/hyperledger/fabric/config
   FABRIC_LOGGING_SPEC: INFO # debug:cauthdsl,policies,msp,common.configtx,common.channelconfig=info
   ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
   ORDERER_GENERAL_LISTENPORT: "6050"
   ORDERER_GENERAL_LOCALMSPID: OrdererMSP
-  ORDERER_GENERAL_LOCALMSPDIR: /var/hyperledger/fabric/organizations/ordererOrganizations/org0.example.com/orderers/org0-orderer2.org0.example.com/msp
+  ORDERER_GENERAL_LOCALMSPDIR: /var/hyperledger/fabric/organizations/ordererOrganizations/{{ORDERER}}.example.com/orderers/{{ORDERER}}-orderer{{ORDERER_NUM}}.{{ORDERER}}.example.com/msp
   ORDERER_GENERAL_TLS_ENABLED: "true"
   ORDERER_GENERAL_TLS_CERTIFICATE: /var/hyperledger/fabric/config/tls/tls.crt
   ORDERER_GENERAL_TLS_ROOTCAS: /var/hyperledger/fabric/config/tls/ca.crt
@@ -50,10 +50,10 @@ data:
   ORDERER_ADMIN_TLS_ROOTCAS: /var/hyperledger/fabric/config/tls/ca.crt
   ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/fabric/config/tls/tls.key
   # Authenticate client connections with the org's ecert / admin user enrollments
-  ORDERER_ADMIN_TLS_CLIENTROOTCAS: "[/var/hyperledger/fabric/organizations/ordererOrganizations/org0.example.com/orderers/org0-orderer2.org0.example.com/msp/cacerts/org0-ca.pem]"
-  ORDERER_FILELEDGER_LOCATION: /var/hyperledger/fabric/data/orderer2
-  ORDERER_CONSENSUS_WALDIR: /var/hyperledger/fabric/data/orderer2/etcdraft/wal
-  ORDERER_CONSENSUS_SNAPDIR: /var/hyperledger/fabric/data/orderer2/etcdraft/wal
+  ORDERER_ADMIN_TLS_CLIENTROOTCAS: "[/var/hyperledger/fabric/organizations/ordererOrganizations/{{ORDERER}}.example.com/orderers/{{ORDERER}}-orderer{{ORDERER_NUM}}.{{ORDERER}}.example.com/msp/cacerts/{{ORDERER}}-ca.pem]"
+  ORDERER_FILELEDGER_LOCATION: /var/hyperledger/fabric/data/orderer{{ORDERER_NUM}}
+  ORDERER_CONSENSUS_WALDIR: /var/hyperledger/fabric/data/orderer{{ORDERER_NUM}}/etcdraft/wal
+  ORDERER_CONSENSUS_SNAPDIR: /var/hyperledger/fabric/data/orderer{{ORDERER_NUM}}/etcdraft/wal
   ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:8443
   ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:9443
 
@@ -61,16 +61,16 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: org0-orderer2
+  name: {{ORDERER}}-orderer{{ORDERER_NUM}}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: org0-orderer2
+      app: {{ORDERER}}-orderer{{ORDERER_NUM}}
   template:
     metadata:
       labels:
-        app: org0-orderer2
+        app: {{ORDERER}}-orderer{{ORDERER_NUM}}
     spec:
       containers:
         - name: main
@@ -78,7 +78,7 @@ spec:
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
-                name: org0-orderer2-env
+                name: {{ORDERER}}-orderer{{ORDERER_NUM}}-env
           ports:
             - containerPort: 6050
             - containerPort: 8443
@@ -94,18 +94,18 @@ spec:
       volumes:
         - name: fabric-volume
           persistentVolumeClaim:
-            claimName: fabric-org0
+            claimName: fabric-{{ORDERER}}
         - name: fabric-config
           configMap:
-            name: org0-config
+            name: {{ORDERER}}-config
         - name: tls-cert-volume
           secret:
-            secretName: org0-orderer2-tls-cert
+            secretName: {{ORDERER}}-orderer{{ORDERER_NUM}}-tls-cert
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: org0-orderer2
+  name: {{ORDERER}}-orderer{{ORDERER_NUM}}
 spec:
   ports:
     - name: general
@@ -118,7 +118,7 @@ spec:
       port: 9443
       protocol: TCP
   selector:
-    app: org0-orderer2
+    app: {{ORDERER}}-orderer{{ORDERER_NUM}}
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -128,33 +128,33 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-connect-timeout: 60s
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
   labels:
-    app: org0-orderer2
-  name: org0-orderer2
+    app: {{ORDERER}}-orderer{{ORDERER_NUM}}
+  name: {{ORDERER}}-orderer{{ORDERER_NUM}}
 spec:
   ingressClassName: nginx
   rules:
-    - host: org0-orderer2.${DOMAIN}
+    - host: {{ORDERER}}-orderer{{ORDERER_NUM}}.${DOMAIN}
       http:
         paths:
           - backend:
               service:
-                name: org0-orderer2
+                name: {{ORDERER}}-orderer{{ORDERER_NUM}}
                 port:
                   name: general
             path: /
             pathType: ImplementationSpecific
-    - host: org0-orderer2-admin.${DOMAIN}
+    - host: {{ORDERER}}-orderer{{ORDERER_NUM}}-admin.${DOMAIN}
       http:
         paths:
           - backend:
               service:
-                name: org0-orderer2
+                name: {{ORDERER}}-orderer{{ORDERER_NUM}}
                 port:
                   name: admin
             path: /
             pathType: ImplementationSpecific
   tls:
     - hosts:
-        - org0-orderer2.${DOMAIN}
+        - {{ORDERER}}-orderer{{ORDERER_NUM}}.${DOMAIN}
     - hosts:
-        - org0-orderer2-admin.${DOMAIN}
+        - {{ORDERER}}-orderer{{ORDERER_NUM}}-admin.${DOMAIN}

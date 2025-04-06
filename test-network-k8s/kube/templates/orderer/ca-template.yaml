@@ -7,7 +7,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: org0-ca-tls-cert
+  name: {{ORDERER}}-ca-tls-cert
 spec:
   isCA: false
   privateKey:
@@ -15,29 +15,29 @@ spec:
     size: 256
   dnsNames:
     - localhost
-    - org0-ca
-    - org0-ca.${NS}.svc.cluster.local
-    - org0-ca.${DOMAIN}
+    - {{ORDERER}}-ca
+    - {{ORDERER}}-ca.${NS}.svc.cluster.local
+    - {{ORDERER}}-ca.${DOMAIN}
   ipAddresses:
     - 127.0.0.1
-  secretName: org0-ca-tls-cert
+  secretName: {{ORDERER}}-ca-tls-cert
   issuerRef:
-    name: org0-tls-cert-issuer
+    name: {{ORDERER}}-tls-cert-issuer
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: org0-ca
+  name: {{ORDERER}}-ca
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: org0-ca
+      app: {{ORDERER}}-ca
   template:
     metadata:
       labels:
-        app: org0-ca
+        app: {{ORDERER}}-ca
     spec:
       containers:
         - name: main
@@ -45,7 +45,7 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: FABRIC_CA_SERVER_CA_NAME
-              value: "org0-ca"
+              value: "{{ORDERER}}-ca"
             - name: FABRIC_CA_SERVER_DEBUG
               value: "false"
             - name: FABRIC_CA_SERVER_HOME
@@ -75,26 +75,26 @@ spec:
       volumes:
         - name: fabric-volume
           persistentVolumeClaim:
-            claimName: fabric-org0
+            claimName: fabric-{{ORDERER}}
         - name: fabric-config
           configMap:
-            name: org0-config
+            name: {{ORDERER}}-config
         - name: tls-cert-volume
           secret:
-            secretName: org0-ca-tls-cert
+            secretName: {{ORDERER}}-ca-tls-cert
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: org0-ca
+  name: {{ORDERER}}-ca
 spec:
   ports:
     - name: https
       port: 443
       protocol: TCP
   selector:
-    app: org0-ca
+    app: {{ORDERER}}-ca
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -104,21 +104,21 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-connect-timeout: 60s
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
   labels:
-    app: org0-ca
-  name: org0-ca
+    app: {{ORDERER}}-ca
+  name: {{ORDERER}}-ca
 spec:
   ingressClassName: nginx
   rules:
-    - host: org0-ca.${DOMAIN}
+    - host: {{ORDERER}}-ca.${DOMAIN}
       http:
         paths:
           - backend:
               service:
-                name: org0-ca
+                name: {{ORDERER}}-ca
                 port:
                   name: https
             path: /
             pathType: ImplementationSpecific
   tls:
     - hosts:
-      - org0-ca.${DOMAIN}
+      - {{ORDERER}}-ca.${DOMAIN}

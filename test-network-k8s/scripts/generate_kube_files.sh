@@ -5,7 +5,47 @@ set -euo pipefail
 function generate_kube_files() {
   echo "📁 Generating Kubernetes files..."
 
-  mkdir -p kube
+  mkdir -p kube/org0
+
+  echo "📦 Generating for orderer org: ${ORDERER_NAME}"
+
+  ORG_DIR="kube/${ORDERER_NAME}"
+
+  # Generate orderers for org0
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    sed \
+      -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
+      -e "s/{{ORDERER_NUM}}/${i}/g" \
+      kube/templates/orderer/orderer-template.yaml \
+      > "${ORG_DIR}/${ORDERER_NAME}-orderer${i}.yaml"
+  done
+
+  # Generate CA for org0
+  sed \
+    -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
+    kube/templates/orderer/ca-template.yaml \
+    > "${ORG_DIR}/${ORDERER_NAME}-ca.yaml"
+
+  # Generate TLS Issuer for org0
+  sed \
+    -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
+    kube/templates/orderer/tls-cert-issuer-template.yaml \
+    > "${ORG_DIR}/${ORDERER_NAME}-tls-cert-issuer.yaml"
+
+  # Generate Root TLS Issuer for org0
+  sed \
+    -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
+    kube/templates/orderer/root-tls-cert-issuer-template.yaml \
+    > "${ORG_DIR}/${ORDERER_NAME}-root-tls-cert-issuer.yaml"
+
+  # Generate Scrub Volumes Job for org0
+  sed \
+    -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
+    kube/templates/orderer/job-scrub-fabric-volumes-template.yaml \
+    > "${ORG_DIR}/${ORDERER_NAME}-job-scrub-fabric-volumes.yaml"
+
+  echo "✅ Done for ${ORDERER_NAME}"
+
 
   for ORG in ${ORG_NAMES}; do
     ORG_DIR="kube/${ORG}"
