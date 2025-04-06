@@ -66,7 +66,7 @@ context NGINX_HTTPS_PORT              443
 
 context RCAADMIN_USER                 rcaadmin
 context RCAADMIN_PASS                 rcaadminpw
-context ORG_NAMES                     "org0 org1 org2"
+context ORG_NAMES                     "org1 org2"
 context NUM_PEERS_PER_ORG             2
 
 # Calculate the number of organizations from ORG_NAMES if not overridden
@@ -119,6 +119,7 @@ function print_help() {
 . scripts/chaincode.sh
 . scripts/rest_sample.sh
 . scripts/application_connection.sh
+. scripts/generate_kube_files.sh
 
 # check for kind, kubectl, etc.
 check_prereqs
@@ -176,6 +177,11 @@ elif [ "${MODE}" == "application" ]; then
   log "Getting application connection information:"
   application_connection
   log "🏁 - Application connection information ready."
+
+elif [ "${MODE}" == "generate-kube" ]; then
+  log "Generating Kubernetes deployment files:"
+  generate_kube_files
+  log "🏁 - Kubernetes files are ready."
 
 else
   print_help
