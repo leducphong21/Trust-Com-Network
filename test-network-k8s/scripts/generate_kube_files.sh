@@ -44,6 +44,12 @@ function generate_kube_files() {
     kube/templates/orderer/job-scrub-fabric-volumes-template.yaml \
     > "${ORG_DIR}/${ORDERER_NAME}-job-scrub-fabric-volumes.yaml"
 
+  # Generate PVC for org0
+  sed \
+    -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
+    kube/templates/orderer/pvc-fabric-template.yaml \
+    > "kube/pvc-fabric-${ORDERER_NAME}.yaml"
+
   echo "✅ Done for ${ORDERER_NAME}"
 
 
@@ -85,6 +91,12 @@ function generate_kube_files() {
       -e "s/{{ORG_NAME}}/${ORG}/g" \
       kube/templates/job-scrub-fabric-volumes-template.yaml \
       > "${ORG_DIR}/${ORG}-job-scrub-fabric-volumes.yaml"
+
+    ## Generate PVC
+    sed \
+      -e "s/{{ORG_NAME}}/${ORG}/g" \
+      kube/templates/pvc-fabric-template.yaml \
+      > "kube/pvc-fabric-${ORG}.yaml"
 
     echo "✅ Done for ${ORG}"
   done
