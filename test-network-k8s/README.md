@@ -39,9 +39,16 @@ export TEST_NETWORK_CLUSTER_RUNTIME=k3s
 ./network cluster init
 ```
 
+
+
 Launch the network, create a channel, and deploy the [basic-asset-transfer](../asset-transfer-basic) smart contract: 
 ```shell
+
+./network generate-kube
+
 ./network up
+
+
 
 ./network channel create
 

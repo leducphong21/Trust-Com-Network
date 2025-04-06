@@ -31,43 +31,43 @@ Organizations:
       - org0-orderer3.bank.svc.cluster.local:6050
 
   - &Org1
-    Name: Org1MSP
-    ID: Org1MSP
+    Name: org1MSP
+    ID: org1MSP
     MSPDir: ./channel-msp/peerOrganizations/org1/msp
     Policies:
       Readers:
         Type: Signature
-        Rule: "OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')"
+        Rule: "OR('org1MSP.admin', 'org1MSP.peer', 'org1MSP.client')"
       Writers:
         Type: Signature
-        Rule: "OR('Org1MSP.admin', 'Org1MSP.client')"
+        Rule: "OR('org1MSP.admin', 'org1MSP.client')"
       Admins:
         Type: Signature
-        Rule: "OR('Org1MSP.admin')"
+        Rule: "OR('org1MSP.admin')"
       Endorsement:
         Type: Signature
-        Rule: "OR('Org1MSP.peer')"
+        Rule: "OR('org1MSP.peer')"
     AnchorPeers:
       - Host: org1-peer1.bank.svc.cluster.local
         Port: 7051
 
   - &Org2
-    Name: Org2MSP
-    ID: Org2MSP
+    Name: org2MSP
+    ID: org2MSP
     MSPDir: ./channel-msp/peerOrganizations/org2/msp
     Policies:
       Readers:
         Type: Signature
-        Rule: "OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')"
+        Rule: "OR('org2MSP.admin', 'org2MSP.peer', 'org2MSP.client')"
       Writers:
         Type: Signature
-        Rule: "OR('Org2MSP.admin', 'Org2MSP.client')"
+        Rule: "OR('org2MSP.admin', 'org2MSP.client')"
       Admins:
         Type: Signature
-        Rule: "OR('Org2MSP.admin')"
+        Rule: "OR('org2MSP.admin')"
       Endorsement:
         Type: Signature
-        Rule: "OR('Org2MSP.peer')"
+        Rule: "OR('org2MSP.peer')"
     AnchorPeers:
       - Host: org2-peer1.bank.svc.cluster.local
         Port: 7051
@@ -104,10 +104,10 @@ Application: &ApplicationDefaults
       Rule: "MAJORITY Admins"
     LifecycleEndorsement:
       Type: Signature
-      Rule: "OR('Org1MSP.peer','Org2MSP.peer')"
+      Rule: "OR('org1MSP.peer','org2MSP.peer')"
     Endorsement:
       Type: Signature
-      Rule: "OR('Org1MSP.peer','Org2MSP.peer')"
+      Rule: "OR('org1MSP.peer','org2MSP.peer')"
   Capabilities:
     <<: *ApplicationCapabilities
 
@@ -153,7 +153,7 @@ Orderer: &OrdererDefaults
       Rule: "ANY Writers"
     Admins:
       Type: Signature
-      Rule: "OR('OrdererMSP.admin', 'Org1MSP.admin')"  # Cập nhật chính sách tại đây
+      Rule: "OR('OrdererMSP.admin', 'org1MSP.admin')"  # Cập nhật chính sách tại đây
     BlockValidation:
       Type: ImplicitMeta
       Rule: "ANY Writers"
