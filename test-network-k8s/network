@@ -68,7 +68,7 @@ context RCAADMIN_USER                 rcaadmin
 context RCAADMIN_PASS                 rcaadminpw
 context ORG_NAMES                     "org1 org2"
 context NUM_PEERS_PER_ORG             2
-context ORDERER_NAME                  "orderer"
+context ORDERER_NAME                  "org0"
 context NUM_ORDERERS                  3
 
 # Calculate the number of organizations from ORG_NAMES if not overridden
