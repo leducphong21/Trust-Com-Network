@@ -66,6 +66,16 @@ context NGINX_HTTPS_PORT              443
 
 context RCAADMIN_USER                 rcaadmin
 context RCAADMIN_PASS                 rcaadminpw
+context ORG_NAMES                     "org0 org1 org2"
+context NUM_PEERS_PER_ORG             2
+
+# Calculate the number of organizations from ORG_NAMES if not overridden
+if [[ -z "${TEST_NETWORK_NUM_ORGS}" ]]; then
+  NUM_ORGS=$(echo "${ORG_NAMES}" | wc -w)
+else
+  NUM_ORGS="${TEST_NETWORK_NUM_ORGS}"
+fi
+export NUM_ORGS
 
 function print_help() {
   set +x
