@@ -27,15 +27,17 @@ function launch_orderers() {
 function launch_peers() {
   push_fn "Launching peers"
 
-  apply_template kube/org1/org1-peer1.yaml $ORG1_NS
-  apply_template kube/org1/org1-peer2.yaml $ORG1_NS
-  apply_template kube/org2/org2-peer1.yaml $ORG2_NS
-  apply_template kube/org2/org2-peer2.yaml $ORG2_NS
+  for ORG in ${ORG_NAMES}; do
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      apply_template kube/${ORG}/${ORG}-peer${i}.yaml $ORG1_NS
+    done
+  done
 
-  kubectl -n $ORG1_NS rollout status deploy/org1-peer1
-  kubectl -n $ORG1_NS rollout status deploy/org1-peer2
-  kubectl -n $ORG2_NS rollout status deploy/org2-peer1
-  kubectl -n $ORG2_NS rollout status deploy/org2-peer2
+  for ORG in ${ORG_NAMES}; do
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      kubectl -n $ORG1_NS rollout status deploy/${ORG}-peer${i}
+    done
+  done
 
   pop_fn
 }

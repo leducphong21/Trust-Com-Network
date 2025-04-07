@@ -27,11 +27,15 @@ _Fabric, Ahoy!_
 
 ## Quickstart 
 
+```shell
+./network generate-kube
+```
+
 Create a KIND cluster:  
 ```shell
 ./network kind
 ./network cluster init
-```
+
 or for [Rancher / k3s](docs/KUBERNETES.md#rancher-desktop-and-k3s):
 ```shell
 export TEST_NETWORK_CLUSTER_RUNTIME=k3s
@@ -43,8 +47,6 @@ export TEST_NETWORK_CLUSTER_RUNTIME=k3s
 
 Launch the network, create a channel, and deploy the [basic-asset-transfer](../asset-transfer-basic) smart contract: 
 ```shell
-
-./network generate-kube
 
 ./network up
 
