@@ -8,18 +8,18 @@
 function launch_orderers() {
   push_fn "Launching orderers"
 
-  apply_template kube/org0/org0-orderer1.yaml $ORG0_NS
-  apply_template kube/org0/org0-orderer2.yaml $ORG0_NS
-  apply_template kube/org0/org0-orderer3.yaml $ORG0_NS
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    apply_template kube/${ORDERER_NAME}/${ORDERER_NAME}-orderer${i}.yaml $ORG0_NS
+  done
 
-  kubectl -n $ORG0_NS rollout status deploy/org0-orderer1
-  kubectl -n $ORG0_NS rollout status deploy/org0-orderer2
-  kubectl -n $ORG0_NS rollout status deploy/org0-orderer3
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    kubectl -n $ORG0_NS rollout status deploy/${ORDERER_NAME}-orderer${i}
+  done
 
-  if  [ "${ORDERER_TYPE}" == "bft" ]; then
-    apply_template kube/org0/org0-orderer4.yaml $ORG0_NS
-    kubectl -n $ORG0_NS rollout status deploy/org0-orderer4
-  fi
+  # if  [ "${ORDERER_TYPE}" == "bft" ]; then
+  #   apply_template kube/org0/org0-orderer4.yaml $ORG0_NS
+  #   kubectl -n $ORG0_NS rollout status deploy/org0-orderer4
+  # fi
 
   pop_fn
 }
