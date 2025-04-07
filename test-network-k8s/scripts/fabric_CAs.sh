@@ -36,13 +36,15 @@ function init_tls_cert_issuers() {
   kubectl -n $ORG2_NS wait --timeout=30s --for=condition=Ready issuer/root-tls-cert-issuer
 
   # Use the self-signing issuer to generate three Issuers, one for each org.
-  kubectl -n $ORG0_NS apply -f kube/org0/org0-tls-cert-issuer.yaml
-  kubectl -n $ORG1_NS apply -f kube/org1/org1-tls-cert-issuer.yaml
-  kubectl -n $ORG2_NS apply -f kube/org2/org2-tls-cert-issuer.yaml
+  kubectl -n $ORG0_NS apply -f kube/${ORDERER_NAME}/${ORDERER_NAME}-tls-cert-issuer.yaml
+  for ORG in ${ORG_NAMES}; do
+    kubectl -n $ORG1_NS apply -f kube/${ORG}/${ORG}-tls-cert-issuer.yaml
+  done
 
-  kubectl -n $ORG0_NS wait --timeout=30s --for=condition=Ready issuer/org0-tls-cert-issuer
-  kubectl -n $ORG1_NS wait --timeout=30s --for=condition=Ready issuer/org1-tls-cert-issuer
-  kubectl -n $ORG2_NS wait --timeout=30s --for=condition=Ready issuer/org2-tls-cert-issuer
+  kubectl -n $ORG0_NS wait --timeout=30s --for=condition=Ready issuer/${ORDERER_NAME}-tls-cert-issuer
+  for ORG in ${ORG_NAMES}; do
+    kubectl -n $ORG1_NS wait --timeout=30s --for=condition=Ready issuer/${ORG}-tls-cert-issuer
+  done
 
   pop_fn
 }
