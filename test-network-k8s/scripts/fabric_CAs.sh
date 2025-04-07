@@ -8,13 +8,15 @@
 function launch_ECert_CAs() {
   push_fn "Launching Fabric CAs"
 
-  apply_template kube/org0/org0-ca.yaml $ORG0_NS
-  apply_template kube/org1/org1-ca.yaml $ORG1_NS
-  apply_template kube/org2/org2-ca.yaml $ORG2_NS
+  apply_template kube/${ORDERER_NAME}/${ORDERER_NAME}-ca.yaml $ORG0_NS
+  for ORG in ${ORG_NAMES}; do
+    apply_template kube/${ORG}/${ORG}-ca.yaml $ORG1_NS
+  done
 
-  kubectl -n $ORG0_NS rollout status deploy/org0-ca
-  kubectl -n $ORG1_NS rollout status deploy/org1-ca
-  kubectl -n $ORG2_NS rollout status deploy/org2-ca
+  kubectl -n $ORG0_NS rollout status deploy/${ORDERER_NAME}-ca
+  for ORG in ${ORG_NAMES}; do
+    kubectl -n $ORG1_NS rollout status deploy/${ORG}-ca
+  done
 
   # todo: this papers over a nasty bug whereby the CAs are ready, but sporadically refuse connections after a down / up
   sleep 5
