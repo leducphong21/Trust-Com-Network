@@ -117,18 +117,19 @@ function create_peer_local_MSP() {
 function create_local_MSP() {
   push_fn "Creating local node MSP"
 
-  create_orderer_local_MSP org0 orderer1
-  create_orderer_local_MSP org0 orderer2
-  create_orderer_local_MSP org0 orderer3
-  if  [ "${ORDERER_TYPE}" == "bft" ]; then
-    create_orderer_local_MSP org0 orderer4
-  fi
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    create_orderer_local_MSP ${ORDERER_NAME} orderer${i}
+  done
 
-  create_peer_local_MSP org1 peer1 $ORG1_NS
-  create_peer_local_MSP org1 peer2 $ORG1_NS
+  # if  [ "${ORDERER_TYPE}" == "bft" ]; then
+  #   create_orderer_local_MSP org0 orderer4
+  # fi
 
-  create_peer_local_MSP org2 peer1 $ORG2_NS
-  create_peer_local_MSP org2 peer2 $ORG2_NS
+  for ORG in ${ORG_NAMES}; do
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      create_peer_local_MSP ${ORG} peer${i} $ORG1_NS
+    done
+  done
 
   pop_fn
 }
