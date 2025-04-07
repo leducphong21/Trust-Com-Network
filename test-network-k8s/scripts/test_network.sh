@@ -181,16 +181,24 @@ function stop_services() {
 
 function scrub_org_volumes() {
   push_fn "Scrubbing Fabric volumes"
-  for org in org0 org1 org2; do
+  local namespace_variable=${NS}
+  for org in ${ORG_NAMES}; do
     # clean job to make this function can be rerun
-    local namespace_variable=${org^^}_NS
-    kubectl -n ${!namespace_variable} delete jobs --all
+    kubectl -n ${namespace_variable} delete jobs --all
 
     # scrub all pv contents
-    kubectl -n ${!namespace_variable} create -f kube/${org}/${org}-job-scrub-fabric-volumes.yaml
-    kubectl -n ${!namespace_variable} wait --for=condition=complete --timeout=60s job/job-scrub-fabric-volumes
-    kubectl -n ${!namespace_variable} delete jobs --all
+    kubectl -n ${namespace_variable} create -f kube/${org}/${org}-job-scrub-fabric-volumes.yaml
+    kubectl -n ${namespace_variable} wait --for=condition=complete --timeout=60s job/job-scrub-fabric-volumes
+    kubectl -n ${namespace_variable} delete jobs --all
   done
+
+  # clean job to make this function can be rerun
+  kubectl -n ${namespace_variable} delete jobs --all
+
+  # scrub all pv contents
+  kubectl -n ${namespace_variable} create -f kube/${ORDERER_NAME}/${ORDERER_NAME}-job-scrub-fabric-volumes.yaml
+  kubectl -n ${namespace_variable} wait --for=condition=complete --timeout=60s job/job-scrub-fabric-volumes
+  kubectl -n ${namespace_variable} delete jobs --all
   pop_fn
 }
 
