@@ -77,9 +77,10 @@ function enroll_bootstrap_ECert_CA_user() {
 function enroll_bootstrap_ECert_CA_users() {
   push_fn "Enrolling bootstrap ECert CA users"
 
-  enroll_bootstrap_ECert_CA_user org0 $ORG0_NS
-  enroll_bootstrap_ECert_CA_user org1 $ORG1_NS
-  enroll_bootstrap_ECert_CA_user org2 $ORG2_NS
+  enroll_bootstrap_ECert_CA_user ${ORDERER_NAME} $ORG0_NS
+  for ORG in ${ORG_NAMES}; do
+    enroll_bootstrap_ECert_CA_user ${ORG} $ORG1_NS
+  done
 
   pop_fn
 }
