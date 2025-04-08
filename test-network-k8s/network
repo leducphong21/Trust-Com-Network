@@ -68,8 +68,8 @@ context RCAADMIN_USER                 rcaadmin
 context RCAADMIN_PASS                 rcaadminpw
 context ORG_NAMES                     "bank-org land-org auction-org"
 context NUM_PEERS_PER_ORG             5
-context ORDERER_NAME                  "orderer"
-context NUM_ORDERERS                  3
+context ORDERER_NAME                  "org0"
+context NUM_ORDERERS                  6
 
 # Calculate the number of organizations from ORG_NAMES if not overridden
 if [[ -z "${TEST_NETWORK_NUM_ORGS}" ]]; then
@@ -122,6 +122,7 @@ function print_help() {
 . scripts/rest_sample.sh
 . scripts/application_connection.sh
 . scripts/generate_kube_files.sh
+. scripts/generate_configtx.sh  # Thêm import file mới
 
 # check for kind, kubectl, etc.
 check_prereqs
@@ -153,6 +154,7 @@ elif [[ "${MODE}" == "cluster" || "${MODE}" == "k8s" || "${MODE}" == "kube" ]]; 
 
 elif [ "${MODE}" == "up" ]; then
   log "Launching network \"${NETWORK_NAME}\":"
+  generate_configtx
   generate_kube_files
   network_up
   log "🏁 - Network is ready."
@@ -183,6 +185,7 @@ elif [ "${MODE}" == "application" ]; then
 
 elif [ "${MODE}" == "generate-kube" ]; then
   log "Generating Kubernetes deployment files:"
+  generate_configtx  # Gọi hàm để tạo configtx.yaml
   generate_kube_files
   log "🏁 - Kubernetes files are ready."
 

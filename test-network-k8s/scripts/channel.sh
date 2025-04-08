@@ -66,22 +66,31 @@ function channel_command_group() {
 }
 
 function channel_up() {
+  echo "1"
   register_org_admins
+  echo "2"
   enroll_org_admins
 
+  echo "3"
   create_channel_MSP
+
+  echo "4"
   create_genesis_block
 
+  echo "5"
   join_channel_orderers
+
+  echo "6"
   join_channel_peers
 }
 
 function register_org_admins() {
   push_fn "Registering org Admin users"
 
-  register_org_admin org0 org0admin org0adminpw
-  register_org_admin org1 org1admin org1adminpw
-  register_org_admin org2 org2admin org2adminpw
+  register_org_admin ${ORDERER_NAME} ${ORDERER_NAME}admin ${ORDERER_NAME}adminpw
+  for ORG in ${ORG_NAMES}; do
+    register_org_admin ${ORG} ${ORG}admin ${ORG}adminpw
+  done
 
   pop_fn
 }
@@ -109,9 +118,10 @@ function register_org_admin() {
 function enroll_org_admins() {
   push_fn "Enrolling org Admin users"
 
-  enroll_org_admin orderer  org0 org0admin org0adminpw
-  enroll_org_admin peer     org1 org1admin org1adminpw
-  enroll_org_admin peer     org2 org2admin org2adminpw
+  enroll_org_admin orderer  ${ORDERER_NAME} ${ORDERER_NAME}admin ${ORDERER_NAME}adminpw
+  for ORG in ${ORG_NAMES}; do
+    enroll_org_admin peer     ${ORG} ${ORG}admin ${ORG}adminpw
+  done
 
   pop_fn
 }
@@ -188,13 +198,15 @@ EOF
 function create_channel_MSP() {
   push_fn "Creating channel MSP"
 
-  create_channel_org_MSP org0 orderer $ORG0_NS
-  create_channel_org_MSP org1 peer $ORG1_NS
-  create_channel_org_MSP org2 peer $ORG2_NS
+  create_channel_org_MSP ${ORDERER_NAME} orderer $NS
+  for ORG in ${ORG_NAMES}; do
+    create_channel_org_MSP ${ORG} peer $NS
+  done
 
-  extract_orderer_cert org0 orderer1
-  extract_orderer_cert org0 orderer2
-  extract_orderer_cert org0 orderer3
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    extract_orderer_cert ${ORDERER_NAME} orderer${i}
+  done
+
   if  [ "${ORDERER_TYPE}" == "bft" ]; then
       extract_orderer_cert org0 orderer4
   fi
@@ -261,11 +273,11 @@ function create_genesis_block() {
 
   # Define the default channel configtx and profile
   local profile="TwoOrgsApplicationGenesis"
-  cat ${PWD}/config/org0/configtx-template.yaml | envsubst > ${TEMP_DIR}/configtx.yaml
+  # cat ${PWD}/config/org0/configtx-template.yaml | envsubst > ${TEMP_DIR}/configtx.yaml
 
   # Overwrite configtx and profile for bft orderer
   if  [ "${ORDERER_TYPE}" == "bft" ]; then
-    cat ${PWD}/config/org0/bft/configtx-template.yaml | envsubst > ${TEMP_DIR}/configtx.yaml
+    # cat ${PWD}/config/org0/bft/configtx-template.yaml | envsubst > ${TEMP_DIR}/configtx.yaml
     profile="ChannelUsingBFT"
   fi
 
@@ -283,9 +295,10 @@ function create_genesis_block() {
 function join_channel_orderers() {
   push_fn "Joining orderers to channel ${CHANNEL_NAME}"
 
-  join_channel_orderer org0 orderer1
-  join_channel_orderer org0 orderer2
-  join_channel_orderer org0 orderer3
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    join_channel_orderer ${ORDERER_NAME} orderer${i}
+  done
+
   if  [ "${ORDERER_TYPE}" == "bft" ]; then
     join_channel_orderer org0 orderer4
   fi
@@ -313,8 +326,12 @@ function join_channel_orderer() {
 }
 
 function join_channel_peers() {
-  join_org_peers org1
-  join_org_peers org2
+  for ORG in ${ORG_NAMES}; do
+  push_fn "Joining ${ORG} peers to channel ${CHANNEL_NAME}"
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      join_channel_peer  ${ORG} peer${i}
+    done
+  done
 }
 
 function join_org_peers() {

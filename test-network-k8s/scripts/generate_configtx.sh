@@ -1,3 +1,96 @@
+#!/bin/bash
+
+# scripts/generate_configtx.sh
+
+function generate_configtx() {
+  mkdir -p "${TEMP_DIR}"
+  local CONFIG_FILE="${TEMP_DIR}/configtx.yaml"
+  local TEMPLATE_FILE="${TEMP_DIR}/org_template.yaml"
+
+  # Xóa file cũ nếu tồn tại
+  rm -f "$CONFIG_FILE"
+
+  # Tạo template cho tổ chức
+  cat << 'EOF' > "$TEMPLATE_FILE"
+  - &{{ORG_NAME}}
+    # DefaultOrg defines the organization which is used in the sampleconfig
+    # of the fabric.git development environment
+    Name: {{ORG_NAME}}MSP
+
+    # ID to load the MSP definition as
+    ID: {{ORG_NAME}}MSP
+
+    MSPDir: ./channel-msp/peerOrganizations/{{ORG_NAME}}/msp
+
+    # Policies defines the set of policies at this level of the config tree
+    # For organization policies, their canonical path is usually
+    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('{{ORG_NAME}}MSP.admin', '{{ORG_NAME}}MSP.peer', '{{ORG_NAME}}MSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('{{ORG_NAME}}MSP.admin', '{{ORG_NAME}}MSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('{{ORG_NAME}}MSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('{{ORG_NAME}}MSP.peer')"
+
+    # leave this flag set to true.
+    AnchorPeers:
+      # AnchorPeers defines the location of peers which can be used
+      # for cross org gossip communication.  Note, this value is only
+      # encoded in the genesis block in the Application section context
+      - Host: {{ORG_NAME}}-peer1.${NS}.svc.cluster.local
+        Port: 7051
+EOF
+
+  # Tạo danh sách OrdererEndpoints dựa trên NUM_ORDERERS
+  ORDERER_ENDPOINTS=""
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    ORDERER_ENDPOINTS="${ORDERER_ENDPOINTS}      - ${ORDERER_NAME}-orderer${i}.${ORG0_NS}.svc.cluster.local:6050
+"
+  done
+
+  # Tạo danh sách Consenters dựa trên NUM_ORDERERS
+  CONSENTERS=""
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    CONSENTERS="${CONSENTERS}      - Host: ${ORDERER_NAME}-orderer${i}
+        Port: 6050
+        ClientTLSCert: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer${i}/tls/signcerts/tls-cert.pem
+        ServerTLSCert: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer${i}/tls/signcerts/tls-cert.pem
+"
+  done
+
+  # Tạo danh sách Endorsement Rule
+  ENDORSEMENT_RULE="      Rule: \"OR("
+  local i=0
+  for ORG_NAME in ${ORG_NAMES}; do
+    ENDORSEMENT_RULE="${ENDORSEMENT_RULE}'${ORG_NAME}MSP.peer'"
+    if [ $i -lt $((NUM_ORGS-1)) ]; then
+      ENDORSEMENT_RULE="${ENDORSEMENT_RULE}, "
+    fi
+    i=$((i+1))
+  done
+  ENDORSEMENT_RULE="${ENDORSEMENT_RULE})\""
+
+  # Tạo danh sách Organizations trong Profiles
+  ORG_LIST=""
+  for ORG_NAME in ${ORG_NAMES}; do
+    ORG_LIST="${ORG_LIST}        - *${ORG_NAME}
+"
+  done
+
+  # Tạo danh sách tổ chức động từ template
+  ORG_SECTIONS=$(for ORG_NAME in ${ORG_NAMES}; do
+    cat "$TEMPLATE_FILE" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS}/g"
+  done)
+
+  # Ghi toàn bộ nội dung YAML vào file
+  cat << EOF > "$CONFIG_FILE"
 # Copyright IBM Corp. All Rights Reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -22,10 +115,10 @@ Organizations:
     Name: OrdererOrg
 
     # ID to load the MSP definition as
-    ID: OrdererMSP
+    ID: ordererMSP
 
     # MSPDir is the filesystem path which contains the MSP configuration
-    MSPDir: ./channel-msp/ordererOrganizations/org0/msp
+    MSPDir: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/msp
 
     # Policies defines the set of policies at this level of the config tree
     # For organization policies, their canonical path is usually
@@ -33,89 +126,17 @@ Organizations:
     Policies:
       Readers:
         Type: Signature
-        Rule: "OR('OrdererMSP.member')"
+        Rule: "OR('ordererMSP.member')"
       Writers:
         Type: Signature
-        Rule: "OR('OrdererMSP.member')"
+        Rule: "OR('ordererMSP.member')"
       Admins:
         Type: Signature
-        Rule: "OR('OrdererMSP.admin')"
+        Rule: "OR('ordererMSP.admin')"
 
     OrdererEndpoints:
-      - org0-orderer1.${ORG0_NS}.svc.cluster.local:6050
-      - org0-orderer2.${ORG0_NS}.svc.cluster.local:6050
-      - org0-orderer3.${ORG0_NS}.svc.cluster.local:6050
-      - org0-orderer4.${ORG0_NS}.svc.cluster.local:6050
-
-  - &Org1
-    # DefaultOrg defines the organization which is used in the sampleconfig
-    # of the fabric.git development environment
-    Name: Org1MSP
-
-    # ID to load the MSP definition as
-    ID: Org1MSP
-
-    MSPDir: ./channel-msp/peerOrganizations/org1/msp
-
-    # Policies defines the set of policies at this level of the config tree
-    # For organization policies, their canonical path is usually
-    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
-    Policies:
-      Readers:
-        Type: Signature
-        Rule: "OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')"
-      Writers:
-        Type: Signature
-        Rule: "OR('Org1MSP.admin', 'Org1MSP.client')"
-      Admins:
-        Type: Signature
-        Rule: "OR('Org1MSP.admin')"
-      Endorsement:
-        Type: Signature
-        Rule: "OR('Org1MSP.peer')"
-
-    # leave this flag set to true.
-    AnchorPeers:
-      # AnchorPeers defines the location of peers which can be used
-      # for cross org gossip communication.  Note, this value is only
-      # encoded in the genesis block in the Application section context
-      - Host: org1-peer1.${ORG1_NS}.svc.cluster.local
-        Port: 7051
-
-  - &Org2
-    # DefaultOrg defines the organization which is used in the sampleconfig
-    # of the fabric.git development environment
-    Name: Org2MSP
-
-    # ID to load the MSP definition as
-    ID: Org2MSP
-
-    MSPDir: ./channel-msp/peerOrganizations/org2/msp
-
-    # Policies defines the set of policies at this level of the config tree
-    # For organization policies, their canonical path is usually
-    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
-    Policies:
-      Readers:
-        Type: Signature
-        Rule: "OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')"
-      Writers:
-        Type: Signature
-        Rule: "OR('Org2MSP.admin', 'Org2MSP.client')"
-      Admins:
-        Type: Signature
-        Rule: "OR('Org2MSP.admin')"
-      Endorsement:
-        Type: Signature
-        Rule: "OR('Org2MSP.peer')"
-
-    AnchorPeers:
-      # AnchorPeers defines the location of peers which can be used
-      # for cross org gossip communication.  Note, this value is only
-      # encoded in the genesis block in the Application section context
-      - Host: org2-peer1.${ORG2_NS}.svc.cluster.local
-        Port: 7051
-
+${ORDERER_ENDPOINTS}
+${ORG_SECTIONS}
 ################################################################################
 #
 #   SECTION: Capabilities
@@ -140,13 +161,13 @@ Capabilities:
   # supported by both.
   # Set the value of the capability to true to require it.
   Channel: &ChannelCapabilities
-    # V3.0 for Channel is a catchall flag for behavior which has been
-    # determined to be desired for all orderers and peers running at the v3.0.0
-    # level, but which would be incompatible with orderers and peers from
-    # prior releases.
-    # Prior to enabling V3.0 channel capabilities, ensure that all
-    # orderers and peers on a channel are at v3.0.0 or later.
-    V3_0: true
+    # V2_0 capability ensures that orderers and peers behave according
+    # to v2.0 channel capabilities. Orderers and peers from
+    # prior releases would behave in an incompatible way, and are therefore
+    # not able to participate in channels at v2.0 capability.
+    # Prior to enabling V2.0 channel capabilities, ensure that all
+    # orderers and peers on a channel are at v2.0.0 or later.
+    V2_0: true
 
   # Orderer capabilities apply only to the orderers, and may be safely
   # used with prior release peers.
@@ -161,7 +182,7 @@ Capabilities:
     V2_0: true
 
   # Application capabilities apply only to the peer network, and may be safely
-  # used with prior release orderers.
+  # used with prior release peers.
   # Set the value of the capability to true to require it.
   Application: &ApplicationCapabilities
     # V2_0 application capability ensures that peers behave according
@@ -201,13 +222,14 @@ Application: &ApplicationDefaults
       Rule: "MAJORITY Admins"
     LifecycleEndorsement:
       Type: Signature
-      Rule: "OR('Org1MSP.peer','Org2MSP.peer')"
+${ENDORSEMENT_RULE}
     Endorsement:
       Type: Signature
-      Rule: "OR('Org1MSP.peer','Org2MSP.peer')"
+${ENDORSEMENT_RULE}
 
   Capabilities:
     <<: *ApplicationCapabilities
+
 ################################################################################
 #
 #   SECTION: Orderer
@@ -217,6 +239,41 @@ Application: &ApplicationDefaults
 #
 ################################################################################
 Orderer: &OrdererDefaults
+
+  # Orderer Type: The orderer implementation to start
+  OrdererType: etcdraft
+
+  EtcdRaft:
+    Consenters:
+${CONSENTERS}
+    # Options to be specified for all the etcd/raft nodes. The values here
+    # are the defaults for all new channels and can be modified on a
+    # per-channel basis via configuration updates.
+    Options:
+      # TickInterval is the time interval between two Node.Tick invocations.
+      #TickInterval: 500ms default
+      TickInterval: 2500ms
+
+      # ElectionTick is the number of Node.Tick invocations that must pass
+      # between elections. That is, if a follower does not receive any
+      # message from the leader of current term before ElectionTick has
+      # elapsed, it will become candidate and start an election.
+      # ElectionTick must be greater than HeartbeatTick.
+      # ElectionTick: 10 default
+      ElectionTick: 5
+
+      # HeartbeatTick is the number of Node.Tick invocations that must
+      # pass between heartbeats. That is, a leader sends heartbeat
+      # messages to maintain its leadership every HeartbeatTick ticks.
+      HeartbeatTick: 1
+
+      # MaxInflightBlocks limits the max number of in-flight append messages
+      # during optimistic replication phase.
+      MaxInflightBlocks: 5
+
+      # SnapshotIntervalSize defines number of bytes per which a snapshot is taken
+      SnapshotIntervalSize: 16 MB
+
   # Batch Timeout: The amount of time to wait before creating a batch
   BatchTimeout: 2s
 
@@ -299,60 +356,29 @@ Channel: &ChannelDefaults
 #
 ################################################################################
 Profiles:
-  ChannelUsingBFT:
+
+  # test network profile with application (not system) channel.
+  TwoOrgsApplicationGenesis:
     <<: *ChannelDefaults
     Orderer:
       <<: *OrdererDefaults
       Organizations:
         - *OrdererOrg
       Capabilities: *OrdererCapabilities
-      OrdererType: BFT
-      SmartBFT:
-        RequestBatchMaxCount: 100
-        RequestBatchMaxInterval: 50ms
-        RequestForwardTimeout: 2s
-        RequestComplainTimeout: 20s
-        RequestAutoRemoveTimeout: 3m0s
-        ViewChangeResendInterval: 5s
-        ViewChangeTimeout: 20s
-        LeaderHeartbeatTimeout: 1m0s
-        CollectTimeout: 1s
-        RequestBatchMaxBytes: 10485760
-        IncomingMessageBufferSize: 200
-        RequestPoolSize: 100000
-        LeaderHeartbeatCount: 10
-      ConsenterMapping:
-        - ID: 1
-          Host: org0-orderer1
-          Port: 6050
-          MSPID: OrdererMSP
-          Identity: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/cert.pem
-          ClientTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
-          ServerTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
-        - ID: 2
-          Host: org0-orderer2
-          Port: 6050
-          MSPID: OrdererMSP
-          Identity: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer2/cert.pem
-          ClientTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer2/tls/signcerts/tls-cert.pem
-          ServerTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer2/tls/signcerts/tls-cert.pem
-        - ID: 3
-          Host: org0-orderer3
-          Port: 6050
-          MSPID: OrdererMSP
-          Identity: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer3/cert.pem
-          ClientTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer3/tls/signcerts/tls-cert.pem
-          ServerTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer3/tls/signcerts/tls-cert.pem
-        - ID: 4
-          Host: org0-orderer4
-          Port: 6050
-          MSPID: OrdererMSP
-          Identity: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer4/cert.pem
-          ClientTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer4/tls/signcerts/tls-cert.pem
-          ServerTLSCert: ./channel-msp/ordererOrganizations/org0/orderers/org0-orderer4/tls/signcerts/tls-cert.pem
     Application:
       <<: *ApplicationDefaults
       Organizations:
-        - *Org1
-        - *Org2
+${ORG_LIST}
       Capabilities: *ApplicationCapabilities
+EOF
+
+  # Xóa file template tạm thời
+  rm -f "$TEMPLATE_FILE"
+
+  log "Generated configtx.yaml with ${NUM_ORGS} organizations: ${ORG_NAMES}"
+}
+
+# Hàm log giả định (nếu chưa có)
+log() {
+  echo "$1"
+}
