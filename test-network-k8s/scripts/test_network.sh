@@ -199,6 +199,7 @@ function scrub_org_volumes() {
   kubectl -n ${namespace_variable} create -f kube/${ORDERER_NAME}/${ORDERER_NAME}-job-scrub-fabric-volumes.yaml
   kubectl -n ${namespace_variable} wait --for=condition=complete --timeout=60s job/job-scrub-fabric-volumes
   kubectl -n ${namespace_variable} delete jobs --all
+
   pop_fn
 }
 
@@ -220,4 +221,5 @@ function network_down() {
   delete_namespace
 
   rm -rf $PWD/build
+  rm -rf $PWD/kube
 }
