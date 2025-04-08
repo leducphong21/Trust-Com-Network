@@ -153,6 +153,7 @@ elif [[ "${MODE}" == "cluster" || "${MODE}" == "k8s" || "${MODE}" == "kube" ]]; 
 
 elif [ "${MODE}" == "up" ]; then
   log "Launching network \"${NETWORK_NAME}\":"
+  generate_kube_files
   network_up
   log "🏁 - Network is ready."
 

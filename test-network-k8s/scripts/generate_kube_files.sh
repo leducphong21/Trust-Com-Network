@@ -4,7 +4,7 @@ set -euo pipefail
 
 function generate_kube_files() {
   echo "📁 Generating Kubernetes files..."
-
+  mkdir -p kube
   cp templates/kube/*.yaml kube
 
   mkdir -p kube/${ORDERER_NAME}
