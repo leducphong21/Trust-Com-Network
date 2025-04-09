@@ -37,17 +37,17 @@ function chaincode_command_group() {
     log "🏁 - Chaincode services are ready"
 
   elif [ "${COMMAND}" == "install" ]; then
-    log "Installing chaincode for org1"
+    log "Installing chaincode for bank-org"
     install_chaincode $@
     log "🏁 - Chaincode is installed"
 
   elif [ "${COMMAND}" == "approve" ]; then
-    log "Approving chaincode for org1"
+    log "Approving chaincode for bank-org"
     approve_chaincode $@
     log "🏁 - Chaincode is approved"
 
   elif [ "${COMMAND}" == "commit" ]; then
-    log "Committing chaincode for org1"
+    log "Committing chaincode for bank-org"
     commit_chaincode $@
     log "🏁 - Chaincode is committed"
 
@@ -148,7 +148,7 @@ function query_chaincode() {
 
   set -x
 
-  export_peer_context org1 peer1
+  export_peer_context bank-org peer1
 
   peer chaincode query \
     -n  $cc_name \
@@ -165,13 +165,13 @@ function query_chaincode_metadata() {
   local args='{"Args":["org.hyperledger.fabric:GetMetadata"]}'
 
   log ''
-  log 'Org1-Peer1:'
-  export_peer_context org1 peer1
+  log 'Bank-org-Peer1:'
+  export_peer_context bank-org peer1
   peer chaincode query -n $cc_name -C $CHANNEL_NAME -c $args
 
   log ''
-  log 'Org1-Peer2:'
-  export_peer_context org1 peer2
+  log 'Bank-org-Peer2:'
+  export_peer_context bank-org peer2
   peer chaincode query -n $cc_name -C $CHANNEL_NAME -c $args
 }
 
@@ -179,15 +179,15 @@ function invoke_chaincode() {
   local cc_name=$1
   shift
 
-  export_peer_context org1 peer1
+  export_peer_context bank-org peer1
 
   peer chaincode invoke \
     -n              $cc_name \
     -C              $CHANNEL_NAME \
     -c              $@ \
-    --orderer       org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --orderer       orderer-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --connTimeout   ${ORDERER_TIMEOUT} \
-    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem \
+    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
     #${INVOKE_EXTRA_ARGS}
 
   sleep 2
@@ -301,15 +301,15 @@ function launch_chaincode_service() {
     | sed 's,{{CHAINCODE_ID}},'${cc_id}',g' \
     | sed 's,{{CHAINCODE_IMAGE}},'${cc_image}',g' \
     | sed 's,{{PEER_NAME}},'${peer}',g' \
-    | exec kubectl -n $ORG1_NS apply -f -
+    | exec kubectl -n $NS apply -f -
 
-  kubectl -n $ORG1_NS rollout status deploy/${org}${peer}-ccaas-${cc_name}
+  kubectl -n $NS rollout status deploy/${org}${peer}-ccaas-${cc_name}
 
   pop_fn
 }
 
 function launch_chaincode() {
-  local org=org1
+  local org=bank-org
   local cc_name=$1
   local cc_id=$2
   local cc_image=$3
@@ -333,7 +333,7 @@ function install_chaincode_for() {
 
 # Package and install the chaincode, but do not activate.
 function install_chaincode() {
-  local org=org1
+  local org=bank-org
   local cc_package=$1
 
   install_chaincode_for ${org} peer1 ${cc_package}
@@ -342,7 +342,7 @@ function install_chaincode() {
 
 # approve the chaincode package for an org and assign a name
 function approve_chaincode() {
-  local org=org1
+  local org=bank-org
   local peer=peer1
   local cc_name=$1
   local cc_id=$2
@@ -357,9 +357,9 @@ function approve_chaincode() {
     --version       1 \
     --package-id    ${cc_id} \
     --sequence      1 \
-    --orderer       org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --orderer       orderer-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --connTimeout   ${ORDERER_TIMEOUT} \
-    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem \
+    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
     #${APPROVE_EXTRA_ARGS}
 
   pop_fn
@@ -367,7 +367,7 @@ function approve_chaincode() {
 
 # commit the named chaincode for an org
 function commit_chaincode() {
-  local org=org1
+  local org=bank-org
   local peer=peer1
   local cc_name=$1
   push_fn "Committing chaincode ${cc_name}"
@@ -380,9 +380,9 @@ function commit_chaincode() {
     --name          ${cc_name} \
     --version       1 \
     --sequence      1 \
-    --orderer       org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --orderer       orderer-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --connTimeout   ${ORDERER_TIMEOUT} \
-    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem \
+    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
     #${COMMIT_EXTRA_ARGS}
 
   pop_fn

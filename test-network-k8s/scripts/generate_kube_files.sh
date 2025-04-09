@@ -100,6 +100,12 @@ function generate_kube_files() {
       templates/kube/org/install-k8s-builder-template.yaml \
       > "${ORG_DIR}/${ORG}-install-k8s-builder.yaml"
 
+    # Generate chaincode-template Map
+    sed \
+      -e "s/{{ORG_NAME}}/${ORG}/g" \
+      templates/kube/org/cc-template.yaml \
+      > "${ORG_DIR}/${ORG}-cc-template.yaml"
+
     ## Scrub Volumes Job
     sed \
       -e "s/{{ORG_NAME}}/${ORG}/g" \
@@ -127,6 +133,7 @@ function generate_kube_files() {
       templates/config/org/core-template.yaml \
       > "config/${ORG}/core.yaml"
     done
+
 
   echo "🏁 All kube files generated in ./kube/<org>/"
 }

@@ -37,7 +37,7 @@ data:
   FABRIC_LOGGING_SPEC: INFO # debug:cauthdsl,policies,msp,common.configtx,common.channelconfig=info
   ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
   ORDERER_GENERAL_LISTENPORT: "6050"
-  ORDERER_GENERAL_LOCALMSPID: OrdererMSP
+  ORDERER_GENERAL_LOCALMSPID: {{ORDERER}}MSP
   ORDERER_GENERAL_LOCALMSPDIR: /var/hyperledger/fabric/organizations/ordererOrganizations/{{ORDERER}}.example.com/orderers/{{ORDERER}}-orderer{{ORDERER_NUM}}.{{ORDERER}}.example.com/msp
   ORDERER_GENERAL_TLS_ENABLED: "true"
   ORDERER_GENERAL_TLS_CERTIFICATE: /var/hyperledger/fabric/config/tls/tls.crt
