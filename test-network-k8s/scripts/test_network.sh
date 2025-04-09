@@ -222,4 +222,5 @@ function network_down() {
 
   rm -rf $PWD/build
   rm -rf $PWD/kube
+  rm -rf $PWD/config
 }
