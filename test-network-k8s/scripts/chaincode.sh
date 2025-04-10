@@ -74,6 +74,9 @@ function deploy_chaincode() {
   local temp_folder=$(mktemp -d)
   local cc_package=${temp_folder}/${cc_name}.tgz
 
+  # Tăng sequence một lần cho toàn bộ quá trình deploy
+  local sequence=$(get_next_sequence)
+  
   prepare_chaincode_image ${cc_folder} ${cc_name}
   package_chaincode       ${cc_name} ${cc_label} ${cc_package}
 
@@ -82,7 +85,7 @@ function deploy_chaincode() {
     launch_chaincode      ${cc_name} ${CHAINCODE_ID} ${CHAINCODE_IMAGE}
   fi
 
-  activate_chaincode      ${cc_name} ${cc_package}
+  activate_chaincode      ${cc_name} ${cc_package} ${sequence}
 }
 
 # Prepare a chaincode image for use in a builder package.
@@ -134,12 +137,12 @@ function publish_chaincode_image() {
 function activate_chaincode() {
   local cc_name=$1
   local cc_package=$2
+  local sequence=$3  # Nhận sequence từ deploy_chaincode
 
   set_chaincode_id    ${cc_package}
-
   install_chaincode   ${cc_package}
-  approve_chaincode   ${cc_name} ${CHAINCODE_ID}
-  commit_chaincode    ${cc_name}
+  approve_chaincode   ${cc_name} ${CHAINCODE_ID} ${sequence}
+  commit_chaincode    ${cc_name} ${sequence}
 }
 
 function query_chaincode() {
@@ -349,11 +352,13 @@ function install_chaincode() {
 
 # approve the chaincode package for an org and assign a name
 function approve_chaincode() {
+  local cc_name=$1
+  local cc_id=$2
+  local sequence=$3  # Nhận sequence từ caller
+  
   for ORG in ${ORG_NAMES}; do
     local peer=peer1
-    local cc_name=$1
-    local cc_id=$2
-    push_fn "Approving chaincode ${cc_name} with ID ${cc_id}"
+    push_fn "Approving chaincode ${cc_name} with ID ${cc_id} using sequence ${sequence}"
 
     export_peer_context $ORG $peer
 
@@ -363,23 +368,24 @@ function approve_chaincode() {
       --name          ${cc_name} \
       --version       1 \
       --package-id    ${cc_id} \
-      --sequence      3 \
+      --sequence      ${sequence} \
       --orderer       ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
       --connTimeout   ${ORDERER_TIMEOUT} \
       --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
       #${APPROVE_EXTRA_ARGS}
   done
   
-
   pop_fn
 }
 
 # commit the named chaincode for an org
 function commit_chaincode() {
+  local cc_name=$1
+  local sequence=$2  # Nhận sequence từ caller
+  
   local org=$(echo "$ORG_NAMES" | awk '{print $1}')
   local peer=peer1
-  local cc_name=$1
-  push_fn "Committing chaincode ${cc_name}"
+  push_fn "Committing chaincode ${cc_name} using sequence ${sequence}"
 
   export_peer_context $org $peer
 
@@ -388,7 +394,7 @@ function commit_chaincode() {
     --channelID     ${CHANNEL_NAME} \
     --name          ${cc_name} \
     --version       1 \
-    --sequence      3 \
+    --sequence      ${sequence} \
     --orderer       ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --connTimeout   ${ORDERER_TIMEOUT} \
     --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
@@ -404,5 +410,19 @@ function set_chaincode_id() {
   cc_label=$(tar zxfO ${cc_package} metadata.json | jq -r '.label')
 
   CHAINCODE_ID=${cc_label}:${cc_sha256}
+}
+
+get_next_sequence() {
+  local sequence_file="${TEMP_DIR}/sequence.txt"
+  
+  if [ ! -f "$sequence_file" ]; then
+    echo 0 > "$sequence_file"
+  fi
+  
+  local current_sequence=$(cat "$sequence_file")
+  local next_sequence=$((current_sequence + 1))
+  echo "$next_sequence" > "$sequence_file"
+  
+  echo "$next_sequence"
 }
 
