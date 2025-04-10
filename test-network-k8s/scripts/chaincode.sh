@@ -309,13 +309,16 @@ function launch_chaincode_service() {
 }
 
 function launch_chaincode() {
-  local org=bank-org
   local cc_name=$1
   local cc_id=$2
   local cc_image=$3
 
-  launch_chaincode_service ${org} peer1 ${cc_name} ${cc_id} ${cc_image}
-  launch_chaincode_service ${org} peer2 ${cc_name} ${cc_id} ${cc_image}
+  for ORG in ${ORG_NAMES}; do
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      launch_chaincode_service ${ORG} peer${i} ${cc_name} ${cc_id} ${cc_image}
+    done
+  done
+
 }
 
 function install_chaincode_for() {
@@ -336,38 +339,44 @@ function install_chaincode() {
   local org=bank-org
   local cc_package=$1
 
-  install_chaincode_for ${org} peer1 ${cc_package}
-  install_chaincode_for ${org} peer2 ${cc_package}
+  for ORG in ${ORG_NAMES}; do
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      install_chaincode_for ${ORG} peer${i} ${cc_package}
+    done
+  done
+  
 }
 
 # approve the chaincode package for an org and assign a name
 function approve_chaincode() {
-  local org=bank-org
-  local peer=peer1
-  local cc_name=$1
-  local cc_id=$2
-  push_fn "Approving chaincode ${cc_name} with ID ${cc_id}"
+  for ORG in ${ORG_NAMES}; do
+    local peer=peer1
+    local cc_name=$1
+    local cc_id=$2
+    push_fn "Approving chaincode ${cc_name} with ID ${cc_id}"
 
-  export_peer_context $org $peer
+    export_peer_context $ORG $peer
 
-  peer lifecycle \
-    chaincode approveformyorg \
-    --channelID     ${CHANNEL_NAME} \
-    --name          ${cc_name} \
-    --version       1 \
-    --package-id    ${cc_id} \
-    --sequence      1 \
-    --orderer       orderer-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
-    --connTimeout   ${ORDERER_TIMEOUT} \
-    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
-    #${APPROVE_EXTRA_ARGS}
+    peer lifecycle \
+      chaincode approveformyorg \
+      --channelID     ${CHANNEL_NAME} \
+      --name          ${cc_name} \
+      --version       1 \
+      --package-id    ${cc_id} \
+      --sequence      3 \
+      --orderer       ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+      --connTimeout   ${ORDERER_TIMEOUT} \
+      --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
+      #${APPROVE_EXTRA_ARGS}
+  done
+  
 
   pop_fn
 }
 
 # commit the named chaincode for an org
 function commit_chaincode() {
-  local org=bank-org
+  local org=$(echo "$ORG_NAMES" | awk '{print $1}')
   local peer=peer1
   local cc_name=$1
   push_fn "Committing chaincode ${cc_name}"
@@ -379,8 +388,8 @@ function commit_chaincode() {
     --channelID     ${CHANNEL_NAME} \
     --name          ${cc_name} \
     --version       1 \
-    --sequence      1 \
-    --orderer       orderer-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --sequence      3 \
+    --orderer       ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --connTimeout   ${ORDERER_TIMEOUT} \
     --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
     #${COMMIT_EXTRA_ARGS}

@@ -66,10 +66,10 @@ context NGINX_HTTPS_PORT              443
 
 context RCAADMIN_USER                 rcaadmin
 context RCAADMIN_PASS                 rcaadminpw
-context ORG_NAMES                     "bank-org land-org auction-org"
-context NUM_PEERS_PER_ORG             5
+context ORG_NAMES                     "bank-org land-org"
+context NUM_PEERS_PER_ORG             2
 context ORDERER_NAME                  "orderer"
-context NUM_ORDERERS                  6
+context NUM_ORDERERS                  3
 
 # Calculate the number of organizations from ORG_NAMES if not overridden
 if [[ -z "${TEST_NETWORK_NUM_ORGS}" ]]; then
