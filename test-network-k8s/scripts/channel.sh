@@ -40,9 +40,8 @@ function channel_command_group() {
     fi
 
   elif [ "${COMMAND}" == "sign" ]; then
-    local org=$1
-    log "Signing config for \"${CHANNEL_NAME}\" with ${org}:"
-    sign "${org}"
+    log "Signing config for \"${CHANNEL_NAME}\" with $1 $2:"
+    sign "$1" "$2"
     if [ $? -eq 0 ]; then
       log "🏁 - Config signed."
     else
@@ -66,21 +65,11 @@ function channel_command_group() {
 }
 
 function channel_up() {
-  echo "1"
   register_org_admins
-  echo "2"
   enroll_org_admins
-
-  echo "3"
   create_channel_MSP
-
-  echo "4"
   create_genesis_block
-
-  echo "5"
   join_channel_orderers
-
-  echo "6"
   join_channel_peers
 }
 
@@ -361,17 +350,18 @@ function join_channel_peer() {
 
 function fetch_channel_config() {
   # Log the start of fetching channel configuration
+  local first_org=$(echo "$ORG_NAMES" | awk '{print $1}')
   push_fn "Fetching channel configuration for ${CHANNEL_NAME}"
 
-  # Set the peer context to org1 peer1
-  export_peer_context org1 peer1
+  # Set the peer context to bank-org peer1 (organization đầu tiên trong ORG_NAMES)
+  export_peer_context ${first_org} peer1
 
   # Fetch the channel configuration block from the orderer
   peer channel fetch config ${TEMP_DIR}/channel_config.pb \
     -c ${CHANNEL_NAME} \
-    --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
-    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
 
   # Decode the protobuf block into JSON format and extract the config
   configtxlator proto_decode --input ${TEMP_DIR}/channel_config.pb --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/channel_config.json
@@ -385,18 +375,19 @@ function fetch_channel_config() {
 
 
 function get-modify-config() {
+  local first_org=$(echo "$ORG_NAMES" | awk '{print $1}')
   # Log the start of fetching and preparing channel configuration
   push_fn "Fetching and preparing channel configuration for ${CHANNEL_NAME}"
 
-  # Set the peer context to org1 peer1
-  export_peer_context org1 peer1
+  # Set the peer context to bank-org peer1
+  export_peer_context ${first_org} peer1
 
   # Fetch the current channel configuration block from the orderer
   peer channel fetch config ${TEMP_DIR}/current_config_block.pb \
     -c ${CHANNEL_NAME} \
-    --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+    --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
-    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
 
   # Decode the protobuf block into JSON format and extract the config
   configtxlator proto_decode --input ${TEMP_DIR}/current_config_block.pb \
@@ -408,7 +399,6 @@ function get-modify-config() {
   # Overwrite or create modified_config.json with the current config
   cp -f ${TEMP_DIR}/current_config.json ${TEMP_DIR}/modified_config.json
   if [ $? -ne 0 ]; then
-    # Log an error if the copy operation fails
     log "Error: Failed to create or overwrite modified_config.json"
     pop_fn
     return 1
@@ -420,6 +410,7 @@ function get-modify-config() {
   # Log the completion of the function
   pop_fn
 }
+
 
 function create-config-update-envelope() {
   # Log the start of creating the configuration update envelope
@@ -454,159 +445,3 @@ function create-config-update-envelope() {
   pop_fn
 }
 
-function sign() {
-  local org=$1
-  # Log the start of signing the configuration envelope
-  log "Signing configuration envelope for ${CHANNEL_NAME}"
-
-  # If an org is provided as an argument, use it directly
-  if [ -n "${org}" ]; then
-    selected_org="${org}"
-    log "Using provided organization: ${selected_org}"
-  else
-    # Check if running in an interactive terminal
-    if [ -t 0 ]; then
-      # Display the organization selection menu
-      log "Please select an organization to sign the configuration envelope:"
-      log "  1) org0"
-      log "  2) org1"
-      log "  3) org2"
-      log -n "Enter your choice (1-3): "
-      read choice
-
-      # Map the user's choice to an organization
-      case $choice in
-        1) selected_org="org0" ;;
-        2) selected_org="org1" ;;
-        3) selected_org="org2" ;;
-        *) log "Error: Invalid selection. Please choose a valid option (1-3)."
-           pop_fn
-           return 1 ;;
-      esac
-
-      # Log the selected organization
-      log "Selected organization: ${selected_org}"
-    else
-      # Log an error if not in an interactive terminal
-      log "Error: No interactive terminal detected. Please provide an organization (e.g., 'sign org0') or run in an interactive shell."
-      pop_fn
-      return 1
-    fi
-  fi
-
-  # Check if an organization was selected or provided
-  if [ -z "${selected_org}" ]; then
-    log "Error: No organization selected or provided"
-    pop_fn
-    return 1
-  fi
-
-  # Set the peer context and MSP based on the selected organization
-  if [ "${selected_org}" == "org0" ]; then
-    export_peer_context org0 orderer1
-  elif [ "${selected_org}" == "org1" ]; then
-    export_peer_context org1 peer1
-  elif [ "${selected_org}" == "org2" ]; then
-    export_peer_context org2 peer1
-  else
-    log "Error: Unsupported organization: ${selected_org}"
-    pop_fn
-    return 1
-  fi
-
-  # Set the MSP path for signing
-  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${selected_org}/users/${selected_org}admin/msp
-  
-  # Sign the configuration envelope
-  peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
-
-  # Check if signing failed
-  if [ $? -ne 0 ]; then
-    log "Error: Failed to sign config envelope with ${selected_org}"
-    pop_fn
-    return 1
-  fi
-
-  # Log successful signing
-  log "Successfully signed config envelope with ${selected_org}"
-  pop_fn
-}
-
-function update-config() {
-  local org=$1
-  # Log the start of submitting the configuration update
-  log "Submitting channel configuration update for ${CHANNEL_NAME}"
-
-  # If an org is provided as an argument, use it directly
-  if [ -n "${org}" ]; then
-    selected_org="${org}"
-    log "Using provided organization: ${selected_org}"
-  else
-    # Check if running in an interactive terminal
-    if [ -t 0 ]; then
-      # Display the organization selection menu
-      log "Please select an organization to submit the configuration update:"
-      log "  1) org1"
-      log "  2) org2"
-      log -n "Enter your choice (1-2): "
-      read choice
-
-      # Map the user's choice to an organization
-      case $choice in
-        1) selected_org="org1" ;;
-        2) selected_org="org2" ;;
-        *) log "Error: Invalid selection. Please choose a valid option (1-2)."
-           pop_fn
-           return 1 ;;
-      esac
-
-      # Log the selected organization
-      log "Selected organization: ${selected_org}"
-    else
-      # Log an error if not in an interactive terminal
-      log "Error: No interactive terminal detected. Please provide an organization (e.g., 'update-config org1') or run in an interactive shell."
-      pop_fn
-      return 1
-    fi
-  fi
-
-  # Check if an organization was selected or provided
-  if [ -z "${selected_org}" ]; then
-    log "Error: No organization selected or provided"
-    pop_fn
-    return 1
-  fi
-
-  # Set the peer context and MSP based on the selected organization
-  if [ "${selected_org}" == "org1" ]; then
-    export_peer_context org1 peer1
-  elif [ "${selected_org}" == "org2" ]; then
-    export_peer_context org2 peer1
-  else
-    log "Error: Unsupported organization: ${selected_org}. Only org1 and org2 are allowed."
-    pop_fn
-    return 1
-  fi
-
-  # Set the MSP path for submitting the update
-  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${selected_org}/users/${selected_org}admin/msp
-  
-  # Submit the configuration update to the orderer
-  peer channel update \
-    -f ${TEMP_DIR}/config_update_envelope.pb \
-    -c ${CHANNEL_NAME} \
-    --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
-    --tls \
-    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
-
-  # Check if the update failed
-  if [ $? -ne 0 ]; then
-    log "Error: Failed to update config with ${selected_org}"
-    pop_fn
-    return 1
-  fi
-
-  # Log successful update
-  log "Channel configuration for ${CHANNEL_NAME} has been updated successfully"
-  pop_fn
-}
