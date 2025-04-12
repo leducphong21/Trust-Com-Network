@@ -83,6 +83,37 @@ For Rancher: Preferences -> Kubernetes Settings -> Reset Kubernetes  OR ...
 ./network cluster clean
 ```
 
+## Available Channel Commands
+Creates a new channel and joins orderers and peers to it.
+```shell
+./network channel create
+```
+
+Fetch Channel Configuration
+```shell
+./network channel fetch-config
+```
+
+Get and Modify Channel Configuration
+```shell
+./network channel get-modify-config
+```
+
+Create Configuration Update Envelope
+```shell
+./network channel create-config-update-envelope
+```
+
+Signs the configuration update envelope using the specified organization's credentials.
+```shell
+./network channel sign <org>
+```
+
+Submits the signed configuration update envelope to the channel.
+```shell
+./network channel update-config <org>
+```
+
 
 ## [Detailed Guides](docs/README.md)
 
