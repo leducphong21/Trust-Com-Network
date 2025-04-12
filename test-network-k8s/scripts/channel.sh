@@ -40,8 +40,9 @@ function channel_command_group() {
     fi
 
   elif [ "${COMMAND}" == "sign" ]; then
-    log "Signing config for \"${CHANNEL_NAME}\" with $1 $2:"
-    sign "$1" "$2"
+    local org=$1
+    log "Signing config for \"${CHANNEL_NAME}\" with ${org}:"
+    sign "${org}" 
     if [ $? -eq 0 ]; then
       log "🏁 - Config signed."
     else
@@ -445,3 +446,138 @@ function create-config-update-envelope() {
   pop_fn
 }
 
+function sign() {
+  local org=$1
+
+  # Debug và log
+  push_fn "DEBUG: Entering sign() function with org: ${org},"
+  push_fn "Signing configuration envelope for ${CHANNEL_NAME}"
+
+  log "Using organization: ${org}"
+
+  # Set context dựa trên tổ chức và node
+  export_peer_context "${org}"  "none"
+  export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${org}/users/${org}admin/msp
+
+  # Sign the configuration envelope
+  peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+  if [ $? -ne 0 ]; then
+    pop_fn "Error: Failed to sign config envelope with ${org}"
+    pop_fn
+    return 1
+  fi
+
+  pop_fn "Successfully signed config envelope with ${org}"
+  pop_fn
+}
+
+
+function update-config() {
+   local org=$1
+   # Log the start of submitting the configuration update
+   log "Submitting channel configuration update for ${CHANNEL_NAME}"
+ 
+   # If an org is provided as an argument, use it directly
+   if [ -n "${org}" ]; then
+     selected_org="${org}"
+     log "Using provided organization: ${selected_org}"
+   else
+     # Check if running in an interactive terminal
+     if [ -t 0 ]; then
+       # Display the organization selection menu
+       log "Please select an organization to submit the configuration update:"
+       log "  1) org1"
+       log "  2) org2"
+       log -n "Enter your choice (1-2): "
+       read choice
+ 
+       # Map the user's choice to an organization
+       case $choice in
+         1) selected_org="org1" ;;
+         2) selected_org="org2" ;;
+         *) log "Error: Invalid selection. Please choose a valid option (1-2)."
+            pop_fn
+            return 1 ;;
+       esac
+ 
+       # Log the selected organization
+       log "Selected organization: ${selected_org}"
+     else
+       # Log an error if not in an interactive terminal
+       log "Error: No interactive terminal detected. Please provide an organization (e.g., 'update-config org1') or run in an interactive shell."
+       pop_fn
+       return 1
+     fi
+   fi
+ 
+   # Check if an organization was selected or provided
+   if [ -z "${selected_org}" ]; then
+     log "Error: No organization selected or provided"
+     pop_fn
+     return 1
+   fi
+ 
+   # Set the peer context and MSP based on the selected organization
+   if [ "${selected_org}" == "org1" ]; then
+     export_peer_context org1 peer1
+   elif [ "${selected_org}" == "org2" ]; then
+     export_peer_context org2 peer1
+   else
+     log "Error: Unsupported organization: ${selected_org}. Only org1 and org2 are allowed."
+     pop_fn
+     return 1
+   fi
+ 
+   # Set the MSP path for submitting the update
+   export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${selected_org}/users/${selected_org}admin/msp
+   
+   # Submit the configuration update to the orderer
+   peer channel update \
+     -f ${TEMP_DIR}/config_update_envelope.pb \
+     -c ${CHANNEL_NAME} \
+     --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+     --tls \
+     --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+ 
+   # Check if the update failed
+   if [ $? -ne 0 ]; then
+     log "Error: Failed to update config with ${selected_org}"
+     pop_fn
+     return 1
+   fi
+ 
+   # Log successful update
+   log "Channel configuration for ${CHANNEL_NAME} has been updated successfully"
+   pop_fn
+ }
+
+
+function update-config() {
+   local org=$1
+   # Log the start of submitting the configuration update
+   pop_fn "Submitting channel configuration update for ${CHANNEL_NAME}"
+
+  export_peer_context ${org} peer1
+
+ 
+   # Set the MSP path for submitting the update
+   export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${org}/users/${org}admin/msp
+   
+   # Submit the configuration update to the orderer
+   peer channel update \
+     -f ${TEMP_DIR}/config_update_envelope.pb \
+     -c ${CHANNEL_NAME} \
+     --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+     --tls \
+     --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
+ 
+   # Check if the update failed
+   if [ $? -ne 0 ]; then
+     log "Error: Failed to update config with ${org}"
+     pop_fn
+     return 1
+   fi
+ 
+   # Log successful update
+   pop_fn "Channel configuration for ${CHANNEL_NAME} has been updated successfully"
+ }
