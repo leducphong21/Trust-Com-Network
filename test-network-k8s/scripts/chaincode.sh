@@ -182,7 +182,7 @@ function invoke_chaincode() {
   local cc_name=$1
   shift
 
-  export_peer_context bank-org peer1
+  export_peer_context org1 peer1
 
   peer chaincode invoke \
     -n              $cc_name \

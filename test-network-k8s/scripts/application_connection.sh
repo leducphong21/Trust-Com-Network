@@ -13,9 +13,12 @@ function app_json_ccp {
   local ORG=$1
   local PP=$(one_line_pem $2)
   local CP=$(one_line_pem $3)
+  local OP=$(one_line_pem $4)
   sed -e "s/\${ORG}/$ORG/" \
       -e "s#\${PEERPEM}#$PP#" \
       -e "s#\${CAPEM}#$CP#" \
+      -e "s#\${NS}#${NS}#" \
+      -e "s#\${ORDERERPEM}#${OP}#" \
       scripts/ccp-template.json
 }
 
@@ -41,13 +44,14 @@ function construct_application_configmap() {
 
   local peer_pem=$CHANNEL_MSP_DIR/peerOrganizations/org1/msp/tlscacerts/tlsca-signcert.pem
   local ca_pem=$CHANNEL_MSP_DIR/peerOrganizations/org1/msp/cacerts/ca-signcert.pem
+  local orderer_pem=$CHANNEL_MSP_DIR/ordererOrganizations/orderer/msp/tlscacerts/tlsca-signcert.pem
 
-  echo "$(json_ccp 1 $peer_pem $ca_pem)" > build/application/gateways/org1_ccp.json
+  echo "$(app_json_ccp 1 $peer_pem $ca_pem $orderer_pem)" > build/application/gateways/org1_ccp.json
 
   peer_pem=$CHANNEL_MSP_DIR/peerOrganizations/org2/msp/tlscacerts/tlsca-signcert.pem
   ca_pem=$CHANNEL_MSP_DIR/peerOrganizations/org2/msp/cacerts/ca-signcert.pem
 
-  echo "$(json_ccp 2 $peer_pem $ca_pem)" > build/application/gateways/org2_ccp.json
+  echo "$(app_json_ccp 2 $peer_pem $ca_pem $orderer_pem)" > build/application/gateways/org2_ccp.json
 
   pop_fn
 

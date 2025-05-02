@@ -22,6 +22,18 @@
             ]
         }
     },
+    "orderers": {
+        "orderer-orderer1.bank.svc.cluster.local": {
+        "url": "grpcs://orderer-orderer3.localho.st:443",
+        "tlsCACerts": {
+            "pem": "${ORDERERPEM}"
+        },
+        "grpcOptions": {
+            "ssl-target-name-override": "orderer-orderer3.localho.st",
+            "hostnameOverride": "orderer-orderer3.localho.st"
+        }
+        }
+    },
     "peers": {
         "org${ORG}-peers": {
             "url": "grpcs://org${ORG}-peer1.${NS}.svc.cluster.local:7051",

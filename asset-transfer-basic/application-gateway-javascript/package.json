@@ -15,7 +15,9 @@
     "license": "Apache-2.0",
     "dependencies": {
         "@grpc/grpc-js": "^1.12.2",
-        "@hyperledger/fabric-gateway": "^1.7.0"
+        "@hyperledger/fabric-gateway": "^1.7.0",
+        "fabric-ca-client": "^2.2.20",
+        "fabric-network": "^2.2.20"
     },
     "devDependencies": {
         "@eslint/js": "^9.5.0",
