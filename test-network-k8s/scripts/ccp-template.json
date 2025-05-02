@@ -1,8 +1,8 @@
 {
-    "name": "${NS}-org${ORG}",
+    "name": "${ORG}-profiles",
     "version": "1.0.0",
     "client": {
-        "organization": "Org${ORG}",
+        "organization": "${ORG}",
         "connection": {
             "timeout": {
                 "peer": {
@@ -11,33 +11,55 @@
             }
         }
     },
-    "organizations": {
-        "Org${ORG}": {
-            "mspid": "Org${ORG}MSP",
-            "peers": [
-                "org${ORG}-peers"
+    "channels": {
+        "mychannel": {
+            "orderers": [
+                "${ORDERER}}-orderer1"
             ],
-            "certificateAuthorities": [
-                "org${ORG}-ca"
+            "peers": [
+                "${ORG}-peers"
             ]
         }
     },
+    "organizations": {
+        "${ORG}": {
+            "mspid": "${ORG}MSP",
+            "peers": [
+                "${ORG}-peers"
+            ],
+            "certificateAuthorities": [
+                "${ORG}-ca"
+            ]
+        }
+    },
+    "orderers": {
+        "${ORDERER}}-orderer1": {
+        "url": "grpcs://${ORDERER}}-orderer1.localho.st:443",
+        "tlsCACerts": {
+            "pem": "${ORDERERPEM}"
+        },
+        "grpcOptions": {
+            "ssl-target-name-override": "${ORDERER}}-orderer3.localho.st",
+            "hostnameOverride": "${ORDERER}}-orderer3.localho.st"
+        }
+        }
+    },
     "peers": {
-        "org${ORG}-peers": {
-            "url": "grpcs://org${ORG}-peer1.${NS}.svc.cluster.local:7051",
+        "${ORG}-peers": {
+            "url": "grpcs://${ORG}-peer1.localho.st:443",
             "tlsCACerts": {
                 "pem": "${PEERPEM}"
             },
             "grpcOptions": {
-                "ssl-target-name-override": "org${ORG}-peer1.${NS}.svc.cluster.local",
-                "hostnameOverride": "org${ORG}-peer1.${NS}.svc.cluster.local"
+                "ssl-target-name-override": "${ORG}-peer1.localho.st",
+                "hostnameOverride": "${ORG}-peer1.localho.st"
             }
         }
     },
     "certificateAuthorities": {
-        "org${ORG}-ca": {
-            "url": "https://org${ORG}-ca:443",
-            "caName": "org${ORG}-ca",
+        "${ORG}-ca": {
+            "url": "https://${ORG}-ca.localho.st:443",
+            "caName": "${ORG}-ca",
             "tlsCACerts": {
                 "pem": ["${CAPEM}"]
             },
