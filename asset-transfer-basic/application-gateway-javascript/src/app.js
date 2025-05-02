@@ -71,7 +71,7 @@ async function main() {
         await readAssetByID(contract);
 
         // Cập nhật tài sản không tồn tại
-        await updateNonExistentAsset(contract);
+        // await updateNonExistentAsset(contract);
     } finally {
         await gateway.disconnect();
     }
