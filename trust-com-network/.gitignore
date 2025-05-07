@@ -7,3 +7,4 @@ bin/
 *.tgz
 /kube/
 /config/
+env.sh
