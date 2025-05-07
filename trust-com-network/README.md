@@ -1,10 +1,8 @@
-# Kubernetes Test Network 
-
-This project re-establishes the Hyperledger [test-network](../test-network) as a _cloud native_ application.
+# Trust Com Netowk
 
 ### Objectives:
 
-- Provide a simple, _one click_ activity for running the Fabric test network.
+- Provide a simple, _one click_ activity for running the Trust Com Netowk
 - Provide a reference guide for deploying _production-style_ networks on Kubernetes.
 - Provide a _cloud ready_ platform for developing chaincode, Gateway, and blockchain apps.
 - Provide a Kube supplement to the Fabric [CA Operations and Deployment](https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/ca-deploy.html) guides.
@@ -63,12 +61,7 @@ Invoke and query chaincode:
 ./network chaincode query  asset-transfer-basic '{"Args":["ReadAsset","asset1"]}'
 ```
 
-Access the blockchain with a [REST API](https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic/rest-api-typescript): 
-```shell
-./network rest-easy
-```
-
-Shut down the test network: 
+Shut down the trust com network 
 ```shell
 ./network down 
 ```
@@ -113,46 +106,3 @@ Submits the signed configuration update envelope to the channel.
 ```shell
 ./network channel update-config <org>
 ```
-
-
-## [Detailed Guides](docs/README.md)
-
-- [Working with Kubernetes](docs/KUBERNETES.md)
-- [Certificate Authorities](docs/CA.md)
-- [Launching the Test Network](docs/TEST_NETWORK.md)
-- [Working with Channels](docs/CHANNELS.md)
-- [Working with Chaincode](docs/CHAINCODE.md)
-- [Working with Applications](docs/APPLICATIONS.md)
-- [Working with BFT Orderers](docs/BFT_ORDERERS.md)
-
-
-### DNS Resolution on OSX
-
-Fabric's OSX binaries have been statically linked with the golang `go` DNS resolver.  In some environments, this 
-causes a brief but [noticeable delay](https://github.com/hyperledger/fabric/issues/3372) when issuing peer commands 
-against the test network.
-
-Workarounds to improve DNS resolution time on OSX: 
-
-- Add manual DNS overrides for virtual hosts by adding to /etc/hosts:
-```
-127.0.0.1 org0-ca.localho.st
-127.0.0.1 org1-ca.localho.st
-127.0.0.1 org2-ca.localho.st
-127.0.0.1 org0-orderer1.localho.st
-127.0.0.1 org0-orderer2.localho.st
-127.0.0.1 org0-orderer3.localho.st
-127.0.0.1 org1-peer1.localho.st
-127.0.0.1 org1-peer2.localho.st
-127.0.0.1 org2-peer1.localho.st
-127.0.0.1 org2-peer2.localho.st
-```
-
-- Reduce the system resolver timeout from the default 5s by adding to /etc/resolv.conf:
-```shell
-options: timeout 2
-```
-
-- Compile the [fabric binaries](https://github.com/hyperledger/fabric) on a Mac and copy `build/bin/*` outputs to 
-  `test-network-k8s/bin`.  Mac native builds are linked against the `netdns=cgo` DNS resolver, and are not
-  subject to the timeouts associated with the Golang DNS resolver.
