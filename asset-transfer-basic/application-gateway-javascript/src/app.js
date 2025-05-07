@@ -10,9 +10,9 @@ const path = require('path');
 
 const channelName = envOrDefault('CHANNEL_NAME', 'mychannel');
 const chaincodeName = envOrDefault('CHAINCODE_NAME', 'asset-transfer-basic');
-const connectionProfilePath = envOrDefault('CONNECTION_PROFILE_PATH', path.resolve(__dirname, '..', 'org1_ccp.json'));
+const connectionProfilePath = envOrDefault('CONNECTION_PROFILE_PATH', path.resolve(__dirname, '..', 'bank-org_ccp.json'));
 const walletPath = envOrDefault('WALLET_PATH', path.resolve(__dirname, '..', 'wallet'));
-const userId = envOrDefault('USER_ID', 'appuser_org1');
+const userId = envOrDefault('USER_ID', 'appuser_bank-org');
 
 const assetId = `asset${String(Date.now())}`;
 

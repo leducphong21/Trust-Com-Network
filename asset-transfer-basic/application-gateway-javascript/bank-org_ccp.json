@@ -1,0 +1,71 @@
+{
+    "name": "bank-org-profiles",
+    "version": "1.0.0",
+    "client": {
+        "organization": "bank-org",
+        "connection": {
+            "timeout": {
+                "peer": {
+                    "endorser": "300"
+                }
+            }
+        }
+    },
+    "channels": {
+        "mychannel": {
+            "orderers": [
+                "orderer-orderer1"
+            ],
+            "peers": [
+                "bank-org-peers"
+            ]
+        }
+    },
+    "organizations": {
+        "bank-org": {
+            "mspid": "bank-orgMSP",
+            "peers": [
+                "bank-org-peers"
+            ],
+            "certificateAuthorities": [
+                "bank-org-ca"
+            ]
+        }
+    },
+    "orderers": {
+        "orderer-orderer1": {
+        "url": "grpcs://orderer-orderer1.localho.st:443",
+        "tlsCACerts": {
+            "pem": "-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIRALcauypDr53dPQi3AetvU/8wCgYIKoZIzj0EAwIwHjEc\nMBoGA1UEAxMTb3JkZXJlci5leGFtcGxlLmNvbTAeFw0yNTA1MDMxNTExNDBaFw0y\nNTA4MDExNTExNDBaMB4xHDAaBgNVBAMTE29yZGVyZXIuZXhhbXBsZS5jb20wWTAT\nBgcqhkjOPQIBBggqhkjOPQMBBwNCAAT/FwBCNg03kFDIgsUR0SacWOzFCrRXB796\nJCRWiGU9KXP6mzVtFmUjfTPUCqtywEf/sZ+ZTTArknO52O/j8y7fo0IwQDAOBgNV\nHQ8BAf8EBAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUXXCkxI+tBcWr\nf5LunpF0DJR/ySYwCgYIKoZIzj0EAwIDSAAwRQIhANW3zKFI1wR9r2oPVhI77wvM\nVGqW7XtX619PTKkZ/nVRAiBUybRZnIewqU7xLY1nlTJyhPZ+ZlZJ1yAzxpxr+s4q\naw==\n-----END CERTIFICATE-----\n"
+        },
+        "grpcOptions": {
+            "ssl-target-name-override": "orderer-orderer3.localho.st",
+            "hostnameOverride": "orderer-orderer3.localho.st"
+        }
+        }
+    },
+    "peers": {
+        "bank-org-peers": {
+            "url": "grpcs://bank-org-peer1.localho.st:443",
+            "tlsCACerts": {
+                "pem": "-----BEGIN CERTIFICATE-----\nMIIBfzCCASWgAwIBAgIRANFjzdPODCy6XEwaB8scBWgwCgYIKoZIzj0EAwIwHzEd\nMBsGA1UEAxMUYmFuay1vcmcuZXhhbXBsZS5jb20wHhcNMjUwNTAzMTUxMTQwWhcN\nMjUwODAxMTUxMTQwWjAfMR0wGwYDVQQDExRiYW5rLW9yZy5leGFtcGxlLmNvbTBZ\nMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDuZXK9PGJ6lAISZZkI7b9QLN9emSE9W\n/Akfcrc+cUzQYGfXhP9PxnOVlVDZkVSw/theTrMISkyTwW3mGAKjLaOjQjBAMA4G\nA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBS7MitHA0On\n0avhNs3Vt4JVSHC/NzAKBggqhkjOPQQDAgNIADBFAiAXqYNF09Z0p6vST+SAM86L\nLfovsCOaJq/EpT6Cw/KJTAIhAJ+xs60rvy7KpUXQxhC1btUdzesgGcp8nRRmVcnL\nqOep\n-----END CERTIFICATE-----\n"
+            },
+            "grpcOptions": {
+                "ssl-target-name-override": "bank-org-peer1.localho.st",
+                "hostnameOverride": "bank-org-peer1.localho.st"
+            }
+        }
+    },
+    "certificateAuthorities": {
+        "bank-org-ca": {
+            "url": "https://bank-org-ca.localho.st:443",
+            "caName": "bank-org-ca",
+            "tlsCACerts": {
+                "pem": ["-----BEGIN CERTIFICATE-----\nMIICKDCCAc6gAwIBAgIUDmi8h09vqO4zlWgctC0NofA62IUwCgYIKoZIzj0EAwIw\naDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQK\nEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMt\nY2Etc2VydmVyMB4XDTI1MDUwMzE1MDcwMFoXDTQwMDQyOTE1MDcwMFowaDELMAkG\nA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQwEgYDVQQKEwtIeXBl\ncmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRkwFwYDVQQDExBmYWJyaWMtY2Etc2Vy\ndmVyMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5h/FPKpb0EWNXOYZC7DyQEm/\nWvV0PBLS2sV6f1zKe58LcZmO5fq04cBYqUNTpubkJpHXhViGif5aie8enWYup6NW\nMFQwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQEwHQYDVR0OBBYE\nFCA1OCeIyTvbFRRG4AH9ON3oUXgjMA8GA1UdEQQIMAaHBH8AAAEwCgYIKoZIzj0E\nAwIDSAAwRQIhAL4o7KvGJhl6Eospc9RB/PKGpQYWYEn/o6MfWi1a89KFAiAyI4Xn\nhoTMfkWG85H/x+xma/Ds2geGObVw6tlnhPA14g==\n-----END CERTIFICATE-----\n"]
+            },
+            "httpOptions": {
+                "verify": false
+            }
+        }
+    }
+}
