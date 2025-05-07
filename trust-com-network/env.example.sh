@@ -1,4 +1,4 @@
-ENB_NETWOK_NAME=bank
+ENV_NETWOK_NAME=bank
 ENV_CLUSTER_NAME=bank-cluster
 ENV_DOMAIN=localho.st
 ENV_CHANNEL_NAME=mychannel
