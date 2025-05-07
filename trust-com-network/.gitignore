@@ -5,5 +5,5 @@ build/
 .env
 bin/
 *.tgz
-kube/
-config/
+/kube/
+/config/
