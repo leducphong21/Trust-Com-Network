@@ -26,6 +26,7 @@ _Fabric, Ahoy!_
 ## Quickstart 
 
 ```shell
+cp env.example.sh env.sh
 ./network generate-kube
 ```
 
