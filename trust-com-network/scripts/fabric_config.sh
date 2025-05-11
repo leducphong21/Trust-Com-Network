@@ -49,18 +49,11 @@ function init_storage_volumes() {
 }
 
 function load_org_config() {
-  push_fn "Creating fabric config maps"
+  local org_name=$1
+  push_fn "Creating fabric config maps" ${org_name}
 
-  kubectl -n $ORG0_NS delete configmap ${ORDERER_NAME}-config || true
-  for ORG in ${ORG_NAMES}; do
-    kubectl -n $ORG1_NS delete configmap ${ORG}-config || true
-  done
-
-  
-  kubectl -n $ORG0_NS create configmap ${ORDERER_NAME}-config --from-file=config/${ORDERER_NAME}
-  for ORG in ${ORG_NAMES}; do
-    kubectl -n $ORG1_NS create configmap ${ORG}-config --from-file=config/${ORG}
-  done
+  kubectl -n $ORG1_NS delete configmap ${org_name}-config || true
+  kubectl -n $ORG1_NS create configmap ${org_name}-config --from-file=config/${org_name}
 
   pop_fn
 }

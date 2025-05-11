@@ -6,38 +6,22 @@
 #
 
 function launch_orderers() {
-  push_fn "Launching orderers"
+  local index=$1
+  push_fn "Launching orderer${index}"
 
-  for ((i=1; i<=NUM_ORDERERS; i++)); do
-    apply_template kube/${ORDERER_NAME}/${ORDERER_NAME}-orderer${i}.yaml $ORG0_NS
-  done
-
-  for ((i=1; i<=NUM_ORDERERS; i++)); do
-    kubectl -n $ORG0_NS rollout status deploy/${ORDERER_NAME}-orderer${i}
-  done
-
-  # if  [ "${ORDERER_TYPE}" == "bft" ]; then
-  #   apply_template kube/org0/org0-orderer4.yaml $ORG0_NS
-  #   kubectl -n $ORG0_NS rollout status deploy/org0-orderer4
-  # fi
+  apply_template kube/${ORDERER_NAME}/${ORDERER_NAME}-orderer${index}.yaml $ORG0_NS
+  kubectl -n $ORG0_NS rollout status deploy/${ORDERER_NAME}-orderer${index}
 
   pop_fn
 }
 
 function launch_peers() {
-  push_fn "Launching peers"
+  local org_name=$1
+  local peer_index=$2
+  push_fn "Launching ${org_name} peer${peer_index}"
 
-  for ORG in ${ORG_NAMES}; do
-    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
-      apply_template kube/${ORG}/${ORG}-peer${i}.yaml $ORG1_NS
-    done
-  done
-
-  for ORG in ${ORG_NAMES}; do
-    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
-      kubectl -n $ORG1_NS rollout status deploy/${ORG}-peer${i}
-    done
-  done
+  apply_template kube/${org_name}/${org_name}-peer${peer_index}.yaml $ORG1_NS
+  kubectl -n $ORG1_NS rollout status deploy/${ORG}-peer${peer_index}
 
   pop_fn
 }
@@ -117,21 +101,20 @@ function create_peer_local_MSP() {
 }
 
 function create_local_MSP() {
-  push_fn "Creating local node MSP"
+  local org_name=$1
+  local peer_index=$2
+  push_fn "Creating local node MSP ${org_name} peer${peer_index}"
 
-  for ((i=1; i<=NUM_ORDERERS; i++)); do
-    create_orderer_local_MSP ${ORDERER_NAME} orderer${i}
-  done
+  create_peer_local_MSP ${org_name} peer${peer_index} $ORG1_NS
 
-  # if  [ "${ORDERER_TYPE}" == "bft" ]; then
-  #   create_orderer_local_MSP org0 orderer4
-  # fi
+  pop_fn
+}
 
-  for ORG in ${ORG_NAMES}; do
-    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
-      create_peer_local_MSP ${ORG} peer${i} $ORG1_NS
-    done
-  done
+function create_local_MSP_orderer() {
+  local index=$1
+  push_fn "Creating local node MSP ${ORDERER_NAME}${index}"
+
+  create_orderer_local_MSP ${ORDERER_NAME} orderer${index}
 
   pop_fn
 }
@@ -141,7 +124,11 @@ function network_up() {
   # Kube config
   init_namespace
   init_storage_volumes
-  load_org_config
+  
+  load_org_config ${ORDERER_NAME}
+  for ORG in ${ORG_NAMES}; do
+    load_org_config ${ORG}
+  done
 
   # Service account permissions for the k8s builder
   if [ "${CHAINCODE_BUILDER}" == "k8s" ]; then
@@ -152,7 +139,7 @@ function network_up() {
   
 
   # Network TLS CAs
-  init_tls_cert_issuers_orderer
+  init_tls_cert_issuers_org ${ORDERER_NAME}
   for ORG in ${ORG_NAMES}; do
     init_tls_cert_issuers_org ${ORG}
   done
@@ -160,7 +147,7 @@ function network_up() {
 
 
   # Network ECert CAs
-  launch_ECert_CAs_orderer
+  launch_ECert_CAs_org ${ORDERER_NAME}
   for ORG in ${ORG_NAMES}; do
     launch_ECert_CAs_org ${ORG}
   done
@@ -169,18 +156,33 @@ function network_up() {
 
   # enroll orderer cert
   enroll_bootstrap_ECert_CA_users ${ORDERER_NAME}
-
   for ORG in ${ORG_NAMES}; do
     enroll_bootstrap_ECert_CA_users ${ORG}
   done
 
 
 
-  # Test Network
-  create_local_MSP
+  # Trust Com Network
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    create_local_MSP_orderer ${i}
+  done
 
-  launch_orderers
-  launch_peers
+  for ORG in ${ORG_NAMES}; do
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      create_local_MSP ${ORG} ${i}
+    done
+  done
+  
+  for ((i=1; i<=NUM_ORDERERS; i++)); do
+    launch_orderers ${i}
+  done
+  
+  for ORG in ${ORG_NAMES}; do
+    for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
+      launch_peers ${ORG} ${i}
+    done
+  done
+  
 }
 
 function stop_services() {
