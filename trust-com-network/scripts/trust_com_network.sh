@@ -149,12 +149,32 @@ function network_up() {
     apply_k8s_builders
   fi
 
+  
+
   # Network TLS CAs
-  init_tls_cert_issuers
+  init_tls_cert_issuers_orderer
+  for ORG in ${ORG_NAMES}; do
+    init_tls_cert_issuers_org ${ORG}
+  done
+
+
 
   # Network ECert CAs
-  launch_ECert_CAs
-  enroll_bootstrap_ECert_CA_users
+  launch_ECert_CAs_orderer
+  for ORG in ${ORG_NAMES}; do
+    launch_ECert_CAs_org ${ORG}
+  done
+
+
+
+  # enroll orderer cert
+  enroll_bootstrap_ECert_CA_users ${ORDERER_NAME}
+
+  for ORG in ${ORG_NAMES}; do
+    enroll_bootstrap_ECert_CA_users ${ORG}
+  done
+
+
 
   # Test Network
   create_local_MSP

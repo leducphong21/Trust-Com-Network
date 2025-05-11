@@ -5,18 +5,25 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-function launch_ECert_CAs() {
-  push_fn "Launching Fabric CAs"
+function launch_ECert_CAs_org() {
+  local org_name=$1
+  push_fn "Launching Fabric CAs ${org_name}"
+
+  apply_template kube/${org_name}/${org_name}-ca.yaml $ORG1_NS
+  kubectl -n $ORG1_NS rollout status deploy/${org_name}-ca
+
+  # todo: this papers over a nasty bug whereby the CAs are ready, but sporadically refuse connections after a down / up
+  sleep 5
+
+  pop_fn
+}
+
+function launch_ECert_CAs_orderer() {
+  push_fn "Launching Fabric CAs orderer"
 
   apply_template kube/${ORDERER_NAME}/${ORDERER_NAME}-ca.yaml $ORG0_NS
-  for ORG in ${ORG_NAMES}; do
-    apply_template kube/${ORG}/${ORG}-ca.yaml $ORG1_NS
-  done
 
   kubectl -n $ORG0_NS rollout status deploy/${ORDERER_NAME}-ca
-  for ORG in ${ORG_NAMES}; do
-    kubectl -n $ORG1_NS rollout status deploy/${ORG}-ca
-  done
 
   # todo: this papers over a nasty bug whereby the CAs are ready, but sporadically refuse connections after a down / up
   sleep 5
@@ -25,28 +32,35 @@ function launch_ECert_CAs() {
 }
 
 # experimental: create TLS CA issuers using cert-manager for each org.
-function init_tls_cert_issuers() {
-  push_fn "Initializing TLS certificate Issuers"
+function init_tls_cert_issuers_org() {
+  local org_name=$1
+  push_fn "Initializing TLS certificate Issuers" ${org_name}
 
   # Create a self-signing certificate issuer / root TLS certificate for the blockchain.
   # TODO : Bring-Your-Own-Key - allow the network bootstrap to read an optional ECDSA key pair for the TLS trust root CA.
   kubectl -n $ORG0_NS apply -f kube/root-tls-cert-issuer.yaml
   kubectl -n $ORG0_NS wait --timeout=30s --for=condition=Ready issuer/root-tls-cert-issuer
-  kubectl -n $ORG1_NS apply -f kube/root-tls-cert-issuer.yaml
-  kubectl -n $ORG1_NS wait --timeout=30s --for=condition=Ready issuer/root-tls-cert-issuer
-  kubectl -n $ORG2_NS apply -f kube/root-tls-cert-issuer.yaml
-  kubectl -n $ORG2_NS wait --timeout=30s --for=condition=Ready issuer/root-tls-cert-issuer
+
+  # Use the self-signing issuer to generate three Issuers, one for each org.
+  kubectl -n $ORG1_NS apply -f kube/${org_name}/${org_name}-tls-cert-issuer.yaml
+  kubectl -n $ORG1_NS wait --timeout=30s --for=condition=Ready issuer/${org_name}-tls-cert-issuer
+
+  pop_fn
+}
+
+# experimental: create TLS CA issuers using cert-manager for each org.
+function init_tls_cert_issuers_orderer() {
+  push_fn "Initializing TLS certificate Issuers" orderer
+
+  # Create a self-signing certificate issuer / root TLS certificate for the blockchain.
+  # TODO : Bring-Your-Own-Key - allow the network bootstrap to read an optional ECDSA key pair for the TLS trust root CA.
+  kubectl -n $ORG0_NS apply -f kube/root-tls-cert-issuer.yaml
+  kubectl -n $ORG0_NS wait --timeout=30s --for=condition=Ready issuer/root-tls-cert-issuer
 
   # Use the self-signing issuer to generate three Issuers, one for each org.
   kubectl -n $ORG0_NS apply -f kube/${ORDERER_NAME}/${ORDERER_NAME}-tls-cert-issuer.yaml
-  for ORG in ${ORG_NAMES}; do
-    kubectl -n $ORG1_NS apply -f kube/${ORG}/${ORG}-tls-cert-issuer.yaml
-  done
 
   kubectl -n $ORG0_NS wait --timeout=30s --for=condition=Ready issuer/${ORDERER_NAME}-tls-cert-issuer
-  for ORG in ${ORG_NAMES}; do
-    kubectl -n $ORG1_NS wait --timeout=30s --for=condition=Ready issuer/${ORG}-tls-cert-issuer
-  done
 
   pop_fn
 }
@@ -75,12 +89,11 @@ function enroll_bootstrap_ECert_CA_user() {
 }
 
 function enroll_bootstrap_ECert_CA_users() {
-  push_fn "Enrolling bootstrap ECert CA users"
+  
+  local org_name=$1
+  push_fn "Enrolling bootstrap ECert CA user of ${org_name}"
 
-  enroll_bootstrap_ECert_CA_user ${ORDERER_NAME} $ORG0_NS
-  for ORG in ${ORG_NAMES}; do
-    enroll_bootstrap_ECert_CA_user ${ORG} $ORG1_NS
-  done
+  enroll_bootstrap_ECert_CA_user ${org_name} $ORG0_NS
 
   pop_fn
 }
