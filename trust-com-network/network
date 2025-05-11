@@ -18,9 +18,6 @@ set -o errexit
 # todo: allow relative paths for input arguments.
 cd "$(dirname "$0")"
 
-# Set an environment variable based on an optional override (TEST_NETWORK_${name})
-# from the calling shell.  If the override is not available, assign the parameter
-# to a default value.
 function context() {
   local name=$1
   local default_value=$2
@@ -117,10 +114,9 @@ function print_help() {
 . scripts/cluster.sh
 . scripts/fabric_config.sh
 . scripts/fabric_CAs.sh
-. scripts/test_network.sh
+. scripts/trust_com_network.sh
 . scripts/channel.sh
 . scripts/chaincode.sh
-. scripts/rest_sample.sh
 . scripts/application_connection.sh
 . scripts/generate_kube_files.sh
 . scripts/generate_configtx.sh  # Thêm import file mới
@@ -164,7 +160,7 @@ elif [ "${MODE}" == "up" ]; then
   log "🏁 - Network is ready."
 
 elif [ "${MODE}" == "down" ]; then
-  log "Shutting down test network  \"${NETWORK_NAME}\":"
+  log "Shutting down trust com network  \"${NETWORK_NAME}\":"
   network_down
   log "🏁 - Fabric network is down."
 
@@ -176,11 +172,6 @@ elif [[ "${MODE}" == "chaincode" || "${MODE}" == "cc" ]]; then
 
 elif [ "${MODE}" == "anchor" ]; then
   update_anchor_peers $@
-
-elif [ "${MODE}" == "rest-easy" ]; then
-  log "Launching fabric-rest-sample application:"
-  launch_rest_sample
-  log "🏁 - Fabric REST sample is ready."
 
 elif [ "${MODE}" == "application" ]; then
   log "Getting application connection information:"
