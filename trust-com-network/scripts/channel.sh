@@ -189,7 +189,7 @@ function create_channel_MSP() {
   push_fn "Creating channel MSP"
 
   create_channel_org_MSP ${ORDERER_NAME} orderer $NS
-  for ORG in ${ORG_NAMES}; do
+  for ORG in ${ORG_NAMES_CHANNEL}; do
     create_channel_org_MSP ${ORG} peer $NS
   done
 

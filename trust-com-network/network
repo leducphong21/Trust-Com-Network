@@ -39,7 +39,7 @@ context COUCHDB_VERSION               3.4.2
 context NETWORK_NAME                  ${ENV_NETWOK_NAME}
 context CLUSTER_NAME                  ${ENV_CLUSTER_NAME}
 context KUBE_NAMESPACE                ${NETWORK_NAME}
-context NS                            ${ENV_ORG_NAMES}
+context NS                            ${ENV_NAMESPACE}
 context DOMAIN                        ${ENV_DOMAIN}
 context CHANNEL_NAME                  ${ENV_CHANNEL_NAME}
 context ORDERER_TYPE                  raft                  # or bft for BFT Orderer (for Fabric v3.0+)
@@ -61,10 +61,14 @@ context NGINX_HTTPS_PORT              443
 
 context RCAADMIN_USER                 rcaadmin
 context RCAADMIN_PASS                 rcaadminpw
-context ORG_NAMES                     ${ENV_ORG_NAMES}
+context ORG_NAMES                     "bank land"
 context NUM_PEERS_PER_ORG             ${ENV_NUM_PEERS_PER_ORG}
 context ORDERER_NAME                  ${ENV_ORDERER_NAME}
 context NUM_ORDERERS                  ${ENV_NUM_ORDERERS}
+
+context ORG_NAMES_CHANNEL             "bank land"
+context ORDERER_NAMES_CHANNEL         "orderer-bank orderer-land"
+context ORDERER_ORG_COUNTS            "2 3"
 
 # Calculate the number of organizations from ORG_NAMES if not overridden
 if [[ -z "${TEST_NETWORK_NUM_ORGS}" ]]; then
@@ -179,6 +183,11 @@ elif [ "${MODE}" == "generate-kube" ]; then
   log "Generating Kubernetes deployment files:"
   generate_configtx  # Gọi hàm để tạo configtx.yaml
   generate_kube_files
+  log "🏁 - Kubernetes files are ready."
+
+elif [ "${MODE}" == "generate-config" ]; then
+  log "Generating Kubernetes deployment files:"
+  generate_configtx  # Gọi hàm để tạo configtx.yaml
   log "🏁 - Kubernetes files are ready."
 
 elif [ "${MODE}" == "generate-ccp" ]; then

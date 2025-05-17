@@ -3,29 +3,23 @@
 # scripts/generate_configtx.sh
 
 function generate_configtx() {
+  if [ -z "$TEMP_DIR" ] || [ -z "$ORDERER_NAMES_CHANNEL" ] || [ -z "$ORDERER_ORG_COUNTS" ] || [ -z "$ORG_NAMES_CHANNEL" ] || [ -z "$NS" ] || [ -z "$NUM_ORGS" ]; then
+    log "Error: Required environment variables (TEMP_DIR, ORDERER_NAMES_CHANNEL, ORDERER_ORG_COUNTS, ORG_NAMES, NS, NUM_ORGS) are not set."
+    exit 1
+  fi
+
   mkdir -p "${TEMP_DIR}"
   local CONFIG_FILE="${TEMP_DIR}/configtx.yaml"
   local ORG_TEMPLATE_FILE="${TEMP_DIR}/org_template.yaml"
   local ORDERER_TEMPLATE_FILE="${TEMP_DIR}/orderer_template.yaml"
 
-  # Xóa file cũ nếu tồn tại
   rm -f "$CONFIG_FILE"
 
-  # Tạo template cho tổ chức peer
   cat << 'EOF' > "$ORG_TEMPLATE_FILE"
   - &{{ORG_NAME}}
-    # DefaultOrg defines the organization which is used in the sampleconfig
-    # of the fabric.git development environment
     Name: {{ORG_NAME}}MSP
-
-    # ID to load the MSP definition as
     ID: {{ORG_NAME}}MSP
-
     MSPDir: ./channel-msp/peerOrganizations/{{ORG_NAME}}/msp
-
-    # Policies defines the set of policies at this level of the config tree
-    # For organization policies, their canonical path is usually
-    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
     Policies:
       Readers:
         Type: Signature
@@ -39,64 +33,62 @@ function generate_configtx() {
       Endorsement:
         Type: Signature
         Rule: "OR('{{ORG_NAME}}MSP.peer')"
-
-    # leave this flag set to true.
     AnchorPeers:
-      # AnchorPeers defines the location of peers which can be used
-      # for cross org gossip communication.  Note, this value is only
-      # encoded in the genesis block in the Application section context
-      - Host: {{ORG_NAME}}-peer1.${NS}.svc.cluster.local
+      - Host: {{ORG_NAME}}-peer1.{{NS}}.svc.cluster.local
         Port: 7051
 EOF
 
-  # Tạo template cho tổ chức orderer
   cat << 'EOF' > "$ORDERER_TEMPLATE_FILE"
-  - &OrdererOrg
-    # DefaultOrg defines the organization which is used in the sampleconfig
-    # of the fabric.git development environment
-    Name: OrdererOrg
-
-    # ID to load the MSP definition as
-    ID: ordererMSP
-
-    # MSPDir is the filesystem path which contains the MSP configuration
+  - &{{ORDERER_NAME}}
+    Name: {{ORDERER_NAME}}MSP
+    ID: {{ORDERER_NAME}}MSP
     MSPDir: ./channel-msp/ordererOrganizations/{{ORDERER_NAME}}/msp
-
-    # Policies defines the set of policies at this level of the config tree
-    # For organization policies, their canonical path is usually
-    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
     Policies:
       Readers:
         Type: Signature
-        Rule: "OR('ordererMSP.member')"
+        Rule: "OR('{{ORDERER_NAME}}MSP.member')"
       Writers:
         Type: Signature
-        Rule: "OR('ordererMSP.member')"
+        Rule: "OR('{{ORDERER_NAME}}MSP.member')"
       Admins:
         Type: Signature
-        Rule: "OR('ordererMSP.admin')"
-
+        Rule: "OR('{{ORDERER_NAME}}MSP.admin')"
     OrdererEndpoints:
 {{ORDERER_ENDPOINTS}}
 EOF
 
-  # Tạo danh sách OrdererEndpoints dựa trên NUM_ORDERERS
-  ORDERER_ENDPOINTS=""
-  for ((i=1; i<=NUM_ORDERERS; i++)); do
-    ORDERER_ENDPOINTS="${ORDERER_ENDPOINTS}      - ${ORDERER_NAME}-orderer${i}.${NS}.svc.cluster.local:6050\n"
-  done
-
-  # Tạo danh sách Consenters dựa trên NUM_ORDERERS
+  ORDERER_SECTIONS=""
   CONSENTERS=""
-  for ((i=1; i<=NUM_ORDERERS; i++)); do
-    CONSENTERS="${CONSENTERS}      - Host: ${ORDERER_NAME}-orderer${i}
-        Port: 6050
-        ClientTLSCert: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer${i}/tls/signcerts/tls-cert.pem
-        ServerTLSCert: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer${i}/tls/signcerts/tls-cert.pem
-"
+  declare -a CONSENTERS_ARRAY
+
+  read -ra ORDERER_NAME_ARRAY <<< "$ORDERER_NAMES_CHANNEL"
+  read -ra ORDERER_COUNT_ARRAY <<< "$ORDERER_ORG_COUNTS"
+
+  for index in "${!ORDERER_NAME_ARRAY[@]}"; do
+    ORDERER_NAME="${ORDERER_NAME_ARRAY[$index]}"
+    NUM_ORDERERS="${ORDERER_COUNT_ARRAY[$index]}"
+
+    declare -a ORG_ENDPOINTS_ARRAY=()
+    for ((i=1; i<=NUM_ORDERERS; i++)); do
+      ORG_ENDPOINTS_ARRAY+=("      - ${ORDERER_NAME}-orderer${i}.${NS}.svc.cluster.local:6050")
+      CONSENTERS_ARRAY+=("      - Host: ${ORDERER_NAME}-orderer${i}")
+      CONSENTERS_ARRAY+=("        Port: 6050")
+      CONSENTERS_ARRAY+=("        ClientTLSCert: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer${i}/tls/signcerts/tls-cert.pem")
+      CONSENTERS_ARRAY+=("        ServerTLSCert: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer${i}/tls/signcerts/tls-cert.pem")
+    done
+
+    ORG_ENDPOINTS=$(printf "%s\n" "${ORG_ENDPOINTS_ARRAY[@]}")
+    TEMP_ORDERER_FILE="${TEMP_DIR}/temp_orderer_${ORDERER_NAME}.yaml"
+    cat "$ORDERER_TEMPLATE_FILE" | sed "s/{{ORDERER_NAME}}/${ORDERER_NAME}/g" > "$TEMP_ORDERER_FILE"
+    echo -e "${ORG_ENDPOINTS}" > "${TEMP_DIR}/endpoints.txt"
+    sed -i "/{{ORDERER_ENDPOINTS}}/r ${TEMP_DIR}/endpoints.txt" "$TEMP_ORDERER_FILE"
+    sed -i "/{{ORDERER_ENDPOINTS}}/d" "$TEMP_ORDERER_FILE"
+    ORDERER_SECTIONS="${ORDERER_SECTIONS}$(cat "$TEMP_ORDERER_FILE")\n"
+    rm -f "${TEMP_DIR}/endpoints.txt" "$TEMP_ORDERER_FILE"
   done
 
-  # Tạo danh sách Endorsement Rule
+  CONSENTERS=$(printf "%s\n" "${CONSENTERS_ARRAY[@]}")
+
   ENDORSEMENT_RULE="      Rule: \"OR("
   local i=0
   for ORG_NAME in ${ORG_NAMES}; do
@@ -108,112 +100,38 @@ EOF
   done
   ENDORSEMENT_RULE="${ENDORSEMENT_RULE})\""
 
-  # Tạo danh sách Organizations trong Profiles
-  ORG_LIST=""
+  declare -a ORG_LIST_ARRAY
   for ORG_NAME in ${ORG_NAMES}; do
-    ORG_LIST="${ORG_LIST}        - *${ORG_NAME}\n"
+    ORG_LIST_ARRAY+=("        - *${ORG_NAME}")
+  done
+  ORG_LIST=$(printf "%s\n" "${ORG_LIST_ARRAY[@]}")
+
+  declare -a ORDERER_ORG_LIST_ARRAY
+  for ORDERER_NAME in ${ORDERER_NAMES_CHANNEL}; do
+    ORDERER_ORG_LIST_ARRAY+=("        - *${ORDERER_NAME}")
+  done
+  ORDERER_ORG_LIST=$(printf "%s\n" "${ORDERER_ORG_LIST_ARRAY[@]}")
+
+  ORG_SECTIONS=""
+  for ORG_NAME in ${ORG_NAMES}; do
+    ORG_SECTIONS="${ORG_SECTIONS}$(cat "$ORG_TEMPLATE_FILE" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/{{NS}}/${NS}/g")\n"
   done
 
-  # Tạo danh sách tổ chức peer động từ template
-  ORG_SECTIONS=$(for ORG_NAME in ${ORG_NAMES}; do
-    cat "$ORG_TEMPLATE_FILE" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS}/g"
-  done)
-
-  # Tạo danh sách tổ chức orderer động từ template
-  ORDERER_SECTIONS=$(cat "$ORDERER_TEMPLATE_FILE" | sed "s/{{ORDERER_NAME}}/${ORDERER_NAME}/g" | sed "s|{{ORDERER_ENDPOINTS}}|${ORDERER_ENDPOINTS}|g")
-
-  # Ghi toàn bộ nội dung YAML vào file
   cat << EOF > "$CONFIG_FILE"
-# Copyright IBM Corp. All Rights Reserved.
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-
 ---
-################################################################################
-#
-#   Section: Organizations
-#
-#   - This section defines the different organizational identities which will
-#   be referenced later in the configuration.
-#
-################################################################################
 Organizations:
-${ORDERER_SECTIONS}
-${ORG_SECTIONS}
-################################################################################
-#
-#   SECTION: Capabilities
-#
-#   - This section defines the capabilities of fabric network. This is a new
-#   concept as of v1.1.0 and should not be utilized in mixed networks with
-#   v1.0.x peers and orderers.  Capabilities define features which must be
-#   present in a fabric binary for that binary to safely participate in the
-#   fabric network.  For instance, if a new MSP type is added, newer binaries
-#   might recognize and validate the signatures from this type, while older
-#   binaries without this support would be unable to validate those
-#   transactions.  This could lead to different versions of the fabric binaries
-#   having different world states.  Instead, defining a capability for a channel
-#   informs those binaries without this capability that they must cease
-#   processing transactions until they have been upgraded.  For v1.0.x if any
-#   capabilities are defined (including a map with all capabilities turned off)
-#   then the v1.0.x peer will deliberately crash.
-#
-################################################################################
+$(echo -e "${ORDERER_SECTIONS}${ORG_SECTIONS}")
+
 Capabilities:
-  # Channel capabilities apply to both the orderers and the peers and must be
-  # supported by both.
-  # Set the value of the capability to true to require it.
   Channel: &ChannelCapabilities
-    # V2_0 capability ensures that orderers and peers behave according
-    # to v2.0 channel capabilities. Orderers and peers from
-    # prior releases would behave in an incompatible way, and are therefore
-    # not able to participate in channels at v2.0 capability.
-    # Prior to enabling V2.0 channel capabilities, ensure that all
-    # orderers and peers on a channel are at v2.0.0 or later.
     V2_0: true
-
-  # Orderer capabilities apply only to the orderers, and may be safely
-  # used with prior release peers.
-  # Set the value of the capability to true to require it.
   Orderer: &OrdererCapabilities
-    # V2_0 orderer capability ensures that orderers behave according
-    # to v2.0 orderer capabilities. Orderers from
-    # prior releases would behave in an incompatible way, and are therefore
-    # not able to participate in channels at v2.0 orderer capability.
-    # Prior to enabling V2.0 orderer capabilities, ensure that all
-    # orderers on channel are at v2.0.0 or later.
     V2_0: true
-
-  # Application capabilities apply only to the peer network, and may be safely
-  # used with prior release peers.
-  # Set the value of the capability to true to require it.
   Application: &ApplicationCapabilities
-    # V2_0 application capability ensures that peers behave according
-    # to v2.0 application capabilities. Peers from
-    # prior releases would behave in an incompatible way, and are therefore
-    # not able to participate in channels at v2.0 application capability.
-    # Prior to enabling V2.0 application capabilities, ensure that all
-    # peers on channel are at v2.0.0 or later.
     V2_5: true
 
-################################################################################
-#
-#   SECTION: Application
-#
-#   - This section defines the values to encode into a config transaction or
-#   genesis block for application related parameters
-#
-################################################################################
 Application: &ApplicationDefaults
-
-  # Organizations is the list of orgs which are defined as participants on
-  # the application side of the network
   Organizations:
-
-  # Policies defines the set of policies at this level of the config tree
-  # For Application policies, their canonical path is
-  #   /Channel/Application/<PolicyName>
   Policies:
     Readers:
       Type: ImplicitMeta
@@ -230,79 +148,26 @@ ${ENDORSEMENT_RULE}
     Endorsement:
       Type: Signature
 ${ENDORSEMENT_RULE}
-
   Capabilities:
     <<: *ApplicationCapabilities
 
-################################################################################
-#
-#   SECTION: Orderer
-#
-#   - This section defines the values to encode into a config transaction or
-#   genesis block for orderer related parameters
-#
-################################################################################
 Orderer: &OrdererDefaults
-
-  # Orderer Type: The orderer implementation to start
   OrdererType: etcdraft
-
   EtcdRaft:
     Consenters:
-${CONSENTERS}
-    # Options to be specified for all the etcd/raft nodes. The values here
-    # are the defaults for all new channels and can be modified on a
-    # per-channel basis via configuration updates.
+$(echo -e "${CONSENTERS}")
     Options:
-      # TickInterval is the time interval between two Node.Tick invocations.
-      #TickInterval: 500ms default
       TickInterval: 2500ms
-
-      # ElectionTick is the number of Node.Tick invocations that must pass
-      # between elections. That is, if a follower does not receive any
-      # message from the leader of current term before ElectionTick has
-      # elapsed, it will become candidate and start an election.
-      # ElectionTick must be greater than HeartbeatTick.
-      # ElectionTick: 10 default
       ElectionTick: 5
-
-      # HeartbeatTick is the number of Node.Tick invocations that must
-      # pass between heartbeats. That is, a leader sends heartbeat
-      # messages to maintain its leadership every HeartbeatTick ticks.
       HeartbeatTick: 1
-
-      # MaxInflightBlocks limits the max number of in-flight append messages
-      # during optimistic replication phase.
       MaxInflightBlocks: 5
-
-      # SnapshotIntervalSize defines number of bytes per which a snapshot is taken
       SnapshotIntervalSize: 16 MB
-
-  # Batch Timeout: The amount of time to wait before creating a batch
   BatchTimeout: 2s
-
-  # Batch Size: Controls the number of messages batched into a block
   BatchSize:
-
-    # Max Message Count: The maximum number of messages to permit in a batch
     MaxMessageCount: 10
-
-    # Absolute Max Bytes: The absolute maximum number of bytes allowed for
-    # the serialized messages in a batch.
     AbsoluteMaxBytes: 99 MB
-
-    # Preferred Max Bytes: The preferred maximum number of bytes allowed for
-    # the serialized messages in a batch. A message larger than the preferred
-    # max bytes will result in a batch larger than preferred max bytes.
     PreferredMaxBytes: 512 KB
-
-  # Organizations is the list of orgs which are defined as participants on
-  # the orderer side of the network
   Organizations:
-
-  # Policies defines the set of policies at this level of the config tree
-  # For Orderer policies, their canonical path is
-  #   /Channel/Orderer/<PolicyName>
   Policies:
     Readers:
       Type: ImplicitMeta
@@ -313,76 +178,44 @@ ${CONSENTERS}
     Admins:
       Type: ImplicitMeta
       Rule: "MAJORITY Admins"
-    # BlockValidation specifies what signatures must be included in the block
-    # from the orderer for the peer to validate it.
     BlockValidation:
       Type: ImplicitMeta
       Rule: "ANY Writers"
 
-################################################################################
-#
-#   CHANNEL
-#
-#   This section defines the values to encode into a config transaction or
-#   genesis block for channel related parameters.
-#
-################################################################################
 Channel: &ChannelDefaults
-  # Policies defines the set of policies at this level of the config tree
-  # For Channel policies, their canonical path is
-  #   /Channel/<PolicyName>
   Policies:
-    # Who may invoke the 'Deliver' API
     Readers:
       Type: ImplicitMeta
       Rule: "ANY Readers"
-    # Who may invoke the 'Broadcast' API
     Writers:
       Type: ImplicitMeta
       Rule: "ANY Writers"
-    # By default, who may modify elements at this config level
     Admins:
       Type: ImplicitMeta
       Rule: "MAJORITY Admins"
-
-  # Capabilities describes the channel level capabilities, see the
-  # dedicated Capabilities section elsewhere in this file for a full
-  # description
   Capabilities:
     <<: *ChannelCapabilities
 
-################################################################################
-#
-#   Profile
-#
-#   - Different configuration profiles may be encoded here to be specified
-#   as parameters to the configtxgen tool
-#
-################################################################################
 Profiles:
-
-  # test network profile with application (not system) channel.
   TwoOrgsApplicationGenesis:
     <<: *ChannelDefaults
     Orderer:
       <<: *OrdererDefaults
       Organizations:
-        - *OrdererOrg
+$(echo -e "${ORDERER_ORG_LIST}")
       Capabilities: *OrdererCapabilities
     Application:
       <<: *ApplicationDefaults
       Organizations:
-${ORG_LIST}
+$(echo -e "${ORG_LIST}")
       Capabilities: *ApplicationCapabilities
 EOF
 
-  # Xóa các file template tạm thời
   rm -f "$ORG_TEMPLATE_FILE" "$ORDERER_TEMPLATE_FILE"
 
-  log "Generated configtx.yaml with ${NUM_ORGS} organizations: ${ORG_NAMES}"
+  log "Generated configtx.yaml with ${NUM_ORGS} peer orgs and orderer orgs: ${ORDERER_NAMES_CHANNEL}"
 }
 
-# Hàm log giả định (nếu chưa có)
 log() {
   echo "$1"
 }
