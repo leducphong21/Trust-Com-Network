@@ -5,13 +5,14 @@
 function generate_configtx() {
   mkdir -p "${TEMP_DIR}"
   local CONFIG_FILE="${TEMP_DIR}/configtx.yaml"
-  local TEMPLATE_FILE="${TEMP_DIR}/org_template.yaml"
+  local ORG_TEMPLATE_FILE="${TEMP_DIR}/org_template.yaml"
+  local ORDERER_TEMPLATE_FILE="${TEMP_DIR}/orderer_template.yaml"
 
   # Xóa file cũ nếu tồn tại
   rm -f "$CONFIG_FILE"
 
-  # Tạo template cho tổ chức
-  cat << 'EOF' > "$TEMPLATE_FILE"
+  # Tạo template cho tổ chức peer
+  cat << 'EOF' > "$ORG_TEMPLATE_FILE"
   - &{{ORG_NAME}}
     # DefaultOrg defines the organization which is used in the sampleconfig
     # of the fabric.git development environment
@@ -48,11 +49,41 @@ function generate_configtx() {
         Port: 7051
 EOF
 
+  # Tạo template cho tổ chức orderer
+  cat << 'EOF' > "$ORDERER_TEMPLATE_FILE"
+  - &OrdererOrg
+    # DefaultOrg defines the organization which is used in the sampleconfig
+    # of the fabric.git development environment
+    Name: OrdererOrg
+
+    # ID to load the MSP definition as
+    ID: ordererMSP
+
+    # MSPDir is the filesystem path which contains the MSP configuration
+    MSPDir: ./channel-msp/ordererOrganizations/{{ORDERER_NAME}}/msp
+
+    # Policies defines the set of policies at this level of the config tree
+    # For organization policies, their canonical path is usually
+    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ordererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ordererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ordererMSP.admin')"
+
+    OrdererEndpoints:
+{{ORDERER_ENDPOINTS}}
+EOF
+
   # Tạo danh sách OrdererEndpoints dựa trên NUM_ORDERERS
   ORDERER_ENDPOINTS=""
   for ((i=1; i<=NUM_ORDERERS; i++)); do
-    ORDERER_ENDPOINTS="${ORDERER_ENDPOINTS}      - ${ORDERER_NAME}-orderer${i}.${NS}.svc.cluster.local:6050
-"
+    ORDERER_ENDPOINTS="${ORDERER_ENDPOINTS}      - ${ORDERER_NAME}-orderer${i}.${NS}.svc.cluster.local:6050\n"
   done
 
   # Tạo danh sách Consenters dựa trên NUM_ORDERERS
@@ -80,14 +111,16 @@ EOF
   # Tạo danh sách Organizations trong Profiles
   ORG_LIST=""
   for ORG_NAME in ${ORG_NAMES}; do
-    ORG_LIST="${ORG_LIST}        - *${ORG_NAME}
-"
+    ORG_LIST="${ORG_LIST}        - *${ORG_NAME}\n"
   done
 
-  # Tạo danh sách tổ chức động từ template
+  # Tạo danh sách tổ chức peer động từ template
   ORG_SECTIONS=$(for ORG_NAME in ${ORG_NAMES}; do
-    cat "$TEMPLATE_FILE" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS}/g"
+    cat "$ORG_TEMPLATE_FILE" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS}/g"
   done)
+
+  # Tạo danh sách tổ chức orderer động từ template
+  ORDERER_SECTIONS=$(cat "$ORDERER_TEMPLATE_FILE" | sed "s/{{ORDERER_NAME}}/${ORDERER_NAME}/g" | sed "s|{{ORDERER_ENDPOINTS}}|${ORDERER_ENDPOINTS}|g")
 
   # Ghi toàn bộ nội dung YAML vào file
   cat << EOF > "$CONFIG_FILE"
@@ -106,36 +139,7 @@ EOF
 #
 ################################################################################
 Organizations:
-
-  # SampleOrg defines an MSP using the sampleconfig.  It should never be used
-  # in production but may be used as a template for other definitions
-  - &OrdererOrg
-    # DefaultOrg defines the organization which is used in the sampleconfig
-    # of the fabric.git development environment
-    Name: OrdererOrg
-
-    # ID to load the MSP definition as
-    ID: ordererMSP
-
-    # MSPDir is the filesystem path which contains the MSP configuration
-    MSPDir: ./channel-msp/ordererOrganizations/${ORDERER_NAME}/msp
-
-    # Policies defines the set of policies at this level of the config tree
-    # For organization policies, their canonical path is usually
-    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
-    Policies:
-      Readers:
-        Type: Signature
-        Rule: "OR('ordererMSP.member')"
-      Writers:
-        Type: Signature
-        Rule: "OR('ordererMSP.member')"
-      Admins:
-        Type: Signature
-        Rule: "OR('ordererMSP.admin')"
-
-    OrdererEndpoints:
-${ORDERER_ENDPOINTS}
+${ORDERER_SECTIONS}
 ${ORG_SECTIONS}
 ################################################################################
 #
@@ -372,8 +376,8 @@ ${ORG_LIST}
       Capabilities: *ApplicationCapabilities
 EOF
 
-  # Xóa file template tạm thời
-  rm -f "$TEMPLATE_FILE"
+  # Xóa các file template tạm thời
+  rm -f "$ORG_TEMPLATE_FILE" "$ORDERER_TEMPLATE_FILE"
 
   log "Generated configtx.yaml with ${NUM_ORGS} organizations: ${ORG_NAMES}"
 }
