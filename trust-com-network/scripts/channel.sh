@@ -236,7 +236,7 @@ function create_channel_org_MSP() {
 function extract_orderer_cert() {
   local org=$1
   local orderer=$2
-  local ns=$ORG0_NS
+  local ns=$NS
 
   echo "Extracting cert for $org $orderer"
 

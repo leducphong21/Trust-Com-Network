@@ -9,8 +9,8 @@ function launch_orderers() {
   local index=$1
   push_fn "Launching orderer${index}"
 
-  apply_template kube/${ORDERER_NAME}/${ORDERER_NAME}-orderer${index}.yaml $ORG0_NS
-  kubectl -n $ORG0_NS rollout status deploy/${ORDERER_NAME}-orderer${index}
+  apply_template kube/${ORDERER_NAME}/${ORDERER_NAME}-orderer${index}.yaml $NS
+  kubectl -n $NS rollout status deploy/${ORDERER_NAME}-orderer${index}
 
   pop_fn
 }
@@ -20,8 +20,8 @@ function launch_peers() {
   local peer_index=$2
   push_fn "Launching ${org_name} peer${peer_index}"
 
-  apply_template kube/${org_name}/${org_name}-peer${peer_index}.yaml $ORG1_NS
-  kubectl -n $ORG1_NS rollout status deploy/${ORG}-peer${peer_index}
+  apply_template kube/${org_name}/${org_name}-peer${peer_index}.yaml $NS
+  kubectl -n $NS rollout status deploy/${ORG}-peer${peer_index}
 
   pop_fn
 }
@@ -88,7 +88,7 @@ function create_orderer_local_MSP() {
   local orderer=$2
   local csr_hosts=${org}-${orderer}
 
-  create_node_local_MSP orderer $org $orderer $csr_hosts $ORG0_NS
+  create_node_local_MSP orderer $org $orderer $csr_hosts $NS
 }
 
 function create_peer_local_MSP() {
@@ -105,7 +105,7 @@ function create_local_MSP() {
   local peer_index=$2
   push_fn "Creating local node MSP ${org_name} peer${peer_index}"
 
-  create_peer_local_MSP ${org_name} peer${peer_index} $ORG1_NS
+  create_peer_local_MSP ${org_name} peer${peer_index} $NS
 
   pop_fn
 }
@@ -187,7 +187,7 @@ function network_up() {
 
 function stop_services() {
   push_fn "Stopping Fabric services"
-  for ns in $ORG0_NS $ORG1_NS $ORG2_NS; do
+  for ns in $NS; do
     kubectl -n $ns delete ingress --all
     kubectl -n $ns delete deployment --all
     kubectl -n $ns delete pod --all
@@ -228,7 +228,7 @@ function scrub_org_volumes() {
 function network_down() {
 
   set +e
-  for ns in $ORG0_NS $ORG1_NS $ORG2_NS; do
+  for ns in $NS; do
     kubectl get namespace $ns > /dev/null
     if [[ $? -ne 0 ]]; then
       echo "No namespace $ns found - nothing to do."

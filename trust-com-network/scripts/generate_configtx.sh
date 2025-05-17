@@ -51,7 +51,7 @@ EOF
   # Tạo danh sách OrdererEndpoints dựa trên NUM_ORDERERS
   ORDERER_ENDPOINTS=""
   for ((i=1; i<=NUM_ORDERERS; i++)); do
-    ORDERER_ENDPOINTS="${ORDERER_ENDPOINTS}      - ${ORDERER_NAME}-orderer${i}.${ORG0_NS}.svc.cluster.local:6050
+    ORDERER_ENDPOINTS="${ORDERER_ENDPOINTS}      - ${ORDERER_NAME}-orderer${i}.${NS}.svc.cluster.local:6050
 "
   done
 

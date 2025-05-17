@@ -6,7 +6,7 @@
 #
 
 function init_namespace() {
-  local namespaces=$(echo "$ORG0_NS $ORG1_NS $ORG2_NS" | xargs -n1 | sort -u)
+  local namespaces=$(echo "$NS" | xargs -n1 | sort -u)
   for ns in $namespaces; do
     push_fn "Creating namespace \"$ns\""
     kubectl create namespace $ns || true
@@ -15,7 +15,7 @@ function init_namespace() {
 }
 
 function delete_namespace() {
-  local namespaces=$(echo "$ORG0_NS $ORG1_NS $ORG2_NS" | xargs -n1 | sort -u)
+  local namespaces=$(echo "$NS" | xargs -n1 | sort -u)
   for ns in $namespaces; do
     push_fn "Deleting namespace \"$ns\""
     kubectl delete namespace $ns || true
@@ -39,10 +39,10 @@ function init_storage_volumes() {
     exit 1
   fi
 
-  cat kube/pvc-fabric-${ORDERER_NAME}.yaml | envsubst | kubectl -n $ORG0_NS create -f - || true
+  cat kube/pvc-fabric-${ORDERER_NAME}.yaml | envsubst | kubectl -n $NS create -f - || true
   
   for ORG in ${ORG_NAMES}; do
-    cat kube/pvc-fabric-${ORG}.yaml | envsubst | kubectl -n $ORG1_NS create -f - || true
+    cat kube/pvc-fabric-${ORG}.yaml | envsubst | kubectl -n $NS create -f - || true
   done
 
   pop_fn
@@ -52,8 +52,8 @@ function load_org_config() {
   local org_name=$1
   push_fn "Creating fabric config maps" ${org_name}
 
-  kubectl -n $ORG1_NS delete configmap ${org_name}-config || true
-  kubectl -n $ORG1_NS create configmap ${org_name}-config --from-file=config/${org_name}
+  kubectl -n $NS delete configmap ${org_name}-config || true
+  kubectl -n $NS create configmap ${org_name}-config --from-file=config/${org_name}
 
   pop_fn
 }
@@ -61,8 +61,8 @@ function load_org_config() {
 function apply_k8s_builder_roles() {
   push_fn "Applying k8s chaincode builder roles"
 
-  apply_template kube/fabric-builder-role.yaml $ORG1_NS
-  apply_template kube/fabric-builder-rolebinding.yaml $ORG1_NS
+  apply_template kube/fabric-builder-role.yaml $NS
+  apply_template kube/fabric-builder-rolebinding.yaml $NS
 
   pop_fn
 }
@@ -70,11 +70,9 @@ function apply_k8s_builder_roles() {
 function apply_k8s_builders() {
   push_fn "Installing k8s chaincode builders"
 
-  apply_template kube/org1/org1-install-k8s-builder.yaml $ORG1_NS
-  apply_template kube/org2/org2-install-k8s-builder.yaml $ORG2_NS
+  apply_template kube/org1/org1-install-k8s-builder.yaml $NS
 
-  kubectl -n $ORG1_NS wait --for=condition=complete --timeout=60s job/org1-install-k8s-builder
-  kubectl -n $ORG2_NS wait --for=condition=complete --timeout=60s job/org2-install-k8s-builder
+  kubectl -n $NS wait --for=condition=complete --timeout=60s job/org1-install-k8s-builder
 
   pop_fn
 }
