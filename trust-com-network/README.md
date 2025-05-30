@@ -107,3 +107,5 @@ Submits the signed configuration update envelope to the channel.
 ```shell
 ./network channel update-config <org>
 ```
+
+kubectl port-forward -n bank svc/bank-peer1 5984:5984

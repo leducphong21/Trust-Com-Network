@@ -130,6 +130,9 @@ spec:
     - name: operations
       port: 9443
       protocol: TCP
+    - name: couchdb
+      port: 5984
+      protocol: TCP
   selector:
     app: {{ORG_NAME}}-peer{{PEER_NUM}}
 ---
