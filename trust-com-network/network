@@ -61,7 +61,7 @@ context NGINX_HTTPS_PORT              443
 
 context RCAADMIN_USER                 rcaadmin
 context RCAADMIN_PASS                 rcaadminpw
-context ORG_NAMES                     ${ENV_ORG_NAMES}
+context ORG_NAMES                     "${ENV_ORG_NAMES}"
 context NUM_PEERS_PER_ORG             ${ENV_NUM_PEERS_PER_ORG}
 context ORDERER_NAME                  ${ENV_ORDERER_NAME}
 context NUM_ORDERERS                  ${ENV_NUM_ORDERERS}
