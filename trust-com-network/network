@@ -39,7 +39,7 @@ context COUCHDB_VERSION               3.4.2
 context NETWORK_NAME                  ${ENV_NETWOK_NAME}
 context CLUSTER_NAME                  ${ENV_CLUSTER_NAME}
 context KUBE_NAMESPACE                ${NETWORK_NAME}
-context NS                            ${ENV_ORG_NAMES}
+context NS                            ${ENV_NS}
 context DOMAIN                        ${ENV_DOMAIN}
 context CHANNEL_NAME                  ${ENV_CHANNEL_NAME}
 context ORDERER_TYPE                  raft                  # or bft for BFT Orderer (for Fabric v3.0+)
