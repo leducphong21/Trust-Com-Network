@@ -49,7 +49,9 @@ Launch the network, create a channel, and deploy the [basic-asset-transfer](../a
 
 ./network up
 
+./network channel create-org-admin
 
+./network channel create-channel-msp
 
 ./network channel create
 

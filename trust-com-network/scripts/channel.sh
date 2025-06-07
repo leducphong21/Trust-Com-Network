@@ -11,7 +11,17 @@ function channel_command_group() {
   COMMAND=$1
   shift
 
-  if [ "${COMMAND}" == "create" ]; then
+  if [ "${COMMAND}" == "create-org-admin" ]; then
+    log "Creating org admin \"${CHANNEL_NAME}\":"
+    create_org_admin
+    log "🏁 - Org admin is ready."
+
+  elif [ "${COMMAND}" == "create-channel-msp" ]; then
+    log "Creating channel MSP \"${CHANNEL_NAME}\":"
+    create_channel_MSP
+    log "🏁 - Channel MSP is ready."
+
+  elif [ "${COMMAND}" == "create" ]; then
     log "Creating channel \"${CHANNEL_NAME}\":"
     channel_up
     log "🏁 - Channel is ready."
@@ -65,10 +75,13 @@ function channel_command_group() {
   fi
 }
 
-function channel_up() {
+function create_org_admin() {
   register_org_admins
   enroll_org_admins
-  create_channel_MSP
+}
+
+
+function channel_up() {
   create_genesis_block
   join_channel_orderers
   join_channel_peers
@@ -260,7 +273,7 @@ function extract_orderer_cert() {
 
 function create_genesis_block() {
   push_fn "Creating channel genesis block"
-
+  mkdir -p ${TEMP_DIR}/${CHANNEL_NAME}
   # Define the default channel configtx and profile
   local profile="TwoOrgsApplicationGenesis"
   # cat ${PWD}/config/org0/configtx-template.yaml | envsubst > ${TEMP_DIR}/configtx.yaml
@@ -275,7 +288,7 @@ function create_genesis_block() {
     configtxgen \
       -profile      $profile \
       -channelID    $CHANNEL_NAME \
-      -outputBlock  ${TEMP_DIR}/genesis_block.pb
+      -outputBlock  ${TEMP_DIR}/${CHANNEL_NAME}/genesis_block.pb
 
   # configtxgen -inspectBlock ${TEMP_DIR}/genesis_block.pb
 
@@ -312,7 +325,7 @@ function join_channel_orderer() {
     --client-cert     ${TEMP_DIR}/enrollments/${org}/users/${org}admin/msp/signcerts/cert.pem \
     --client-key      ${TEMP_DIR}/enrollments/${org}/users/${org}admin/msp/keystore/key.pem \
     --channelID       ${CHANNEL_NAME} \
-    --config-block    ${TEMP_DIR}/genesis_block.pb
+    --config-block    ${TEMP_DIR}/${CHANNEL_NAME}/genesis_block.pb
 }
 
 function join_channel_peers() {
@@ -342,7 +355,7 @@ function join_channel_peer() {
   export_peer_context $org $peer
 
   peer channel join \
-    --blockpath   ${TEMP_DIR}/genesis_block.pb \
+    --blockpath   ${TEMP_DIR}/${CHANNEL_NAME}/genesis_block.pb \
     --orderer     org0-orderer1.${DOMAIN} \
     --connTimeout ${ORDERER_TIMEOUT} \
     --tls         \
