@@ -26,6 +26,19 @@ function channel_command_group() {
     channel_up
     log "🏁 - Channel is ready."
 
+  elif [ "${COMMAND}" == "join-orderer" ]; then
+    local orderer=$1
+    log "Joining ${orderer} to \"${CHANNEL_NAME}\":"
+    join_channel_orderer "${ORDERER_NAME}" "${orderer}"
+    log "🏁 - Joining orderer complete."
+
+  elif [ "${COMMAND}" == "join-peer" ]; then
+    local org=$1
+    local peer=$2
+    log "Joining ${peer} of ${org} to \"${CHANNEL_NAME}\":"
+    join_channel_peer "${org}" "${peer}"
+    log "🏁 - Joining peer complete."
+
   elif [ "${COMMAND}" == "fetch-config" ]; then
     log "Fetching channel config for \"${CHANNEL_NAME}\":"
     fetch_channel_config
@@ -302,9 +315,9 @@ function join_channel_orderers() {
     join_channel_orderer ${ORDERER_NAME} orderer${i}
   done
 
-  if  [ "${ORDERER_TYPE}" == "bft" ]; then
-    join_channel_orderer org0 orderer4
-  fi
+  # if  [ "${ORDERER_TYPE}" == "bft" ]; then
+  #   join_channel_orderer org0 orderer4
+  # fi
 
   # todo: readiness / liveiness equivalent for channel?  Needs a little bit to settle before peers can join.
   sleep 10
