@@ -10,8 +10,6 @@
 - Support a transition from the Internal, Docker daemon to [External Chaincode](https://hyperledger-fabric.readthedocs.io/en/latest/cc_launcher.html) builders.
 - Run on any Kube.
 
-_Fabric, Ahoy!_ 
-
 
 ## Prerequisites:
 
