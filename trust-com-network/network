@@ -186,6 +186,11 @@ elif [ "${MODE}" == "generate-ccp" ]; then
   generate_ccp
   log "🏁 - Kubernetes files are ready."
 
+  elif [ "${MODE}" == "generate-config" ]; then
+  log "Generating connection profiles"
+  generate_configtx
+  log "🏁 - Kubernetes files are ready."
+
 elif [ "${MODE}" == "add-peer" ]; then
   org=$1
   index=$2

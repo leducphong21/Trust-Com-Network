@@ -190,7 +190,7 @@ function invoke_chaincode() {
     -c              $@ \
     --orderer       orderer-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --connTimeout   ${ORDERER_TIMEOUT} \
-    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
+    --tls --cafile  ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
     #${INVOKE_EXTRA_ARGS}
 
   sleep 2
@@ -371,7 +371,7 @@ function approve_chaincode() {
       --sequence      ${sequence} \
       --orderer       ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
       --connTimeout   ${ORDERER_TIMEOUT} \
-      --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
+      --tls --cafile  ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
       #${APPROVE_EXTRA_ARGS}
   done
   
@@ -397,7 +397,7 @@ function commit_chaincode() {
     --sequence      ${sequence} \
     --orderer       ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --connTimeout   ${ORDERER_TIMEOUT} \
-    --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
+    --tls --cafile  ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/orderer/orderers/orderer-orderer1/tls/signcerts/tls-cert.pem \
     #${COMMIT_EXTRA_ARGS}
 
   pop_fn

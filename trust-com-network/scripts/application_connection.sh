@@ -38,7 +38,7 @@ function construct_application() {
   push_fn "Constructing application connection profiles"
 
   ENROLLMENT_DIR=${TEMP_DIR}/enrollments
-  CHANNEL_MSP_DIR=${TEMP_DIR}/channel-msp
+  CHANNEL_MSP_DIR=${TEMP_DIR}/${CHANNEL_NAME}/channel-msp
 
   mkdir -p build/application/wallet
   mkdir -p build/application/gateways

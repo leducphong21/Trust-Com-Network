@@ -3,8 +3,8 @@
 # scripts/generate_configtx.sh
 
 function generate_configtx() {
-  mkdir -p "${TEMP_DIR}"
-  local CONFIG_FILE="${TEMP_DIR}/configtx.yaml"
+  mkdir -p "${TEMP_DIR}/${CHANNEL_NAME}"
+  local CONFIG_FILE="${TEMP_DIR}/${CHANNEL_NAME}/configtx.yaml"
   local TEMPLATE_FILE="${TEMP_DIR}/org_template.yaml"
 
   # Xóa file cũ nếu tồn tại
@@ -86,7 +86,7 @@ EOF
 
   # Tạo danh sách tổ chức động từ template
   ORG_SECTIONS=$(for ORG_NAME in ${ORG_NAMES}; do
-    cat "$TEMPLATE_FILE" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS}/g"
+    cat "$TEMPLATE_FILE" | sed "s/{{CHANNEL_NAME}}/${CHANNEL_NAME}/g" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS} /g"
   done)
 
   # Ghi toàn bộ nội dung YAML vào file

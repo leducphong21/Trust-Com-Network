@@ -34,9 +34,9 @@ function channel_command_group() {
 
   elif [ "${COMMAND}" == "join-peer" ]; then
     local org=$1
-    local peer=$2
-    log "Joining ${peer} of ${org} to \"${CHANNEL_NAME}\":"
-    join_channel_peer "${org}" "${peer}"
+    local index=$2
+    log "Joining peer${index} of ${org} to \"${CHANNEL_NAME}\":"
+    join_channel_peer ${org} peer${index}
     log "🏁 - Joining peer complete."
 
   elif [ "${COMMAND}" == "fetch-config" ]; then
@@ -236,7 +236,7 @@ function create_channel_org_MSP() {
   local ns=$3
   local ca_name=${org}-ca
 
-  ORG_MSP_DIR=${TEMP_DIR}/channel-msp/${type}Organizations/${org}/msp
+  ORG_MSP_DIR=${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/${type}Organizations/${org}/msp
   mkdir -p ${ORG_MSP_DIR}/cacerts
   mkdir -p ${ORG_MSP_DIR}/tlscacerts
 
@@ -266,7 +266,7 @@ function extract_orderer_cert() {
 
   echo "Extracting cert for $org $orderer"
 
-  ORDERER_TLS_DIR=${TEMP_DIR}/channel-msp/ordererOrganizations/${org}/orderers/${org}-${orderer}/tls
+  ORDERER_TLS_DIR=${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${org}/orderers/${org}-${orderer}/tls
   mkdir -p $ORDERER_TLS_DIR/signcerts
 
   kubectl -n $ns get secret ${org}-${orderer}-tls-cert -o json \
@@ -281,7 +281,7 @@ function extract_orderer_cert() {
     fatalln "Error: No Pod found with label app=${org}-${orderer} in namespace $ns"
   fi
   # - Copy the enrollment certificate from the pod to the local machine
-  kubectl -n $ns cp ${POD_NAME}:var/hyperledger/fabric/organizations/ordererOrganizations/${org}.example.com/orderers/${org}-${orderer}.${org}.example.com/msp/signcerts/cert.pem ${TEMP_DIR}/channel-msp/ordererOrganizations/${org}/orderers/${org}-${orderer}/cert.pem
+  kubectl -n $ns cp ${POD_NAME}:var/hyperledger/fabric/organizations/ordererOrganizations/${org}.example.com/orderers/${org}-${orderer}.${org}.example.com/msp/signcerts/cert.pem ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${org}/orderers/${org}-${orderer}/cert.pem
 }
 
 function create_genesis_block() {
@@ -297,7 +297,7 @@ function create_genesis_block() {
     profile="ChannelUsingBFT"
   fi
 
-  FABRIC_CFG_PATH=${TEMP_DIR} \
+  FABRIC_CFG_PATH=${TEMP_DIR}/${CHANNEL_NAME} \
     configtxgen \
       -profile      $profile \
       -channelID    $CHANNEL_NAME \
@@ -334,7 +334,7 @@ function join_channel_orderer() {
   # of identity than the Docker Compose network, which transmits the orderer node's TLS key pair directly
   osnadmin channel join \
     --orderer-address ${org}-${orderer}-admin.${DOMAIN}:${NGINX_HTTPS_PORT} \
-    --ca-file         ${TEMP_DIR}/channel-msp/ordererOrganizations/${org}/orderers/${org}-${orderer}/tls/signcerts/tls-cert.pem \
+    --ca-file         ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${org}/orderers/${org}-${orderer}/tls/signcerts/tls-cert.pem \
     --client-cert     ${TEMP_DIR}/enrollments/${org}/users/${org}admin/msp/signcerts/cert.pem \
     --client-key      ${TEMP_DIR}/enrollments/${org}/users/${org}admin/msp/keystore/key.pem \
     --channelID       ${CHANNEL_NAME} \
@@ -372,7 +372,7 @@ function join_channel_peer() {
     --orderer     org0-orderer1.${DOMAIN} \
     --connTimeout ${ORDERER_TIMEOUT} \
     --tls         \
-    --cafile      ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+    --cafile      ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
 }
 
 function fetch_channel_config() {
@@ -388,7 +388,7 @@ function fetch_channel_config() {
     -c ${CHANNEL_NAME} \
     --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
-    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
+    --cafile ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
 
   # Decode the protobuf block into JSON format and extract the config
   configtxlator proto_decode --input ${TEMP_DIR}/channel_config.pb --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/channel_config.json
@@ -414,7 +414,7 @@ function get-modify-config() {
     -c ${CHANNEL_NAME} \
     --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
-    --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
+    --cafile ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
 
   # Decode the protobuf block into JSON format and extract the config
   configtxlator proto_decode --input ${TEMP_DIR}/current_config_block.pb \
@@ -563,7 +563,7 @@ function update-config() {
      -c ${CHANNEL_NAME} \
      --orderer org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
      --tls \
-     --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+     --cafile ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
  
    # Check if the update failed
    if [ $? -ne 0 ]; then
@@ -595,7 +595,7 @@ function update-config() {
      -c ${CHANNEL_NAME} \
      --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
      --tls \
-     --cafile ${TEMP_DIR}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
+     --cafile ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
  
    # Check if the update failed
    if [ $? -ne 0 ]; then
