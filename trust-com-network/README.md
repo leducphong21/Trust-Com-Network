@@ -77,10 +77,21 @@ For Rancher: Preferences -> Kubernetes Settings -> Reset Kubernetes  OR ...
 ./network cluster clean
 ```
 
+## Available Peer Commands
+Creates a new peer and luanch peer to k8s
+```shell
+./network add-peer <org> <peer-index>
+```
+
 ## Available Channel Commands
 Creates a new channel and joins orderers and peers to it.
 ```shell
 ./network channel create
+```
+
+Join peer to channel.
+```shell
+./network channel join-peer <org> <peer-index>
 ```
 
 Fetch Channel Configuration
