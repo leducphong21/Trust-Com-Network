@@ -21,7 +21,7 @@ function launch_peers() {
   push_fn "Launching ${org_name} peer${peer_index}"
 
   apply_template kube/${org_name}/${org_name}-peer${peer_index}.yaml $NS
-  kubectl -n $NS rollout status deploy/${ORG}-peer${peer_index}
+  kubectl -n $NS rollout status deploy/${org_name}-peer${peer_index}
 
   pop_fn
 }
@@ -117,6 +117,24 @@ function create_local_MSP_orderer() {
   create_orderer_local_MSP ${ORDERER_NAME} orderer${index}
 
   pop_fn
+}
+
+function add_peer() {
+  local org=$1
+  local index=$2
+  ORG_DIR="kube/${org}"
+  # generate peer yaml
+  sed \
+    -e "s/{{ORG_NAME}}/${org}/g" \
+    -e "s/{{PEER_NUM}}/${index}/g" \
+    templates/kube/org/peer-template.yaml \
+    > "${ORG_DIR}/${org}-peer${index}.yaml"
+
+  # create local msp
+  create_local_MSP ${org} ${index}
+
+  # luanch peer
+  launch_peers ${org} ${index}
 }
 
 function network_up() {
