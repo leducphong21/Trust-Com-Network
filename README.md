@@ -1,6 +1,6 @@
 # Trust Com Netowk
 
-- The Trust Com Network is a solution for deploying and managing Hyperledger Fabric networks on Kubernetes. It simplifies the setup, development, and operation of blockchain networks through a streamlined, one-click deployment process and comprehensive operational commands. This guide provides instructions for quick setup and ongoing network management in both development and production-like environments.
+ The Trust Com Network is a solution for deploying and managing Hyperledger Fabric networks on Kubernetes. It simplifies the setup, development, and operation of blockchain networks through a streamlined, one-click deployment process and comprehensive operational commands. This guide provides instructions for quick setup and ongoing network management in both development and production-like environments.
 
 ### Objectives:
 - One-Command Setup: Enable rapid deployment of a Hyperledger Fabric network with a single command.
