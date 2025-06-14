@@ -384,17 +384,17 @@ function fetch_channel_config() {
   export_peer_context ${first_org} peer1
 
   # Fetch the channel configuration block from the orderer
-  peer channel fetch config ${TEMP_DIR}/channel_config.pb \
+  peer channel fetch config ${TEMP_DIR}/${CHANNEL_NAME}/channel_config.pb \
     -c ${CHANNEL_NAME} \
     --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
     --cafile ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
 
   # Decode the protobuf block into JSON format and extract the config
-  configtxlator proto_decode --input ${TEMP_DIR}/channel_config.pb --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/channel_config.json
+  configtxlator proto_decode --input ${TEMP_DIR}/${CHANNEL_NAME}/channel_config.pb --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/${CHANNEL_NAME}/channel_config.json
 
   # Log the location where the config is saved
-  log "Channel config saved to ${TEMP_DIR}/channel_config.pb (protobuf) and ${TEMP_DIR}/channel_config.json (JSON)"
+  log "Channel config saved to ${TEMP_DIR}/${CHANNEL_NAME}/channel_config.pb (protobuf) and ${TEMP_DIR}/${CHANNEL_NAME}/channel_config.json (JSON)"
 
   # Log the completion of the function
   pop_fn
@@ -410,21 +410,21 @@ function get-modify-config() {
   export_peer_context ${first_org} peer1
 
   # Fetch the current channel configuration block from the orderer
-  peer channel fetch config ${TEMP_DIR}/current_config_block.pb \
+  peer channel fetch config ${TEMP_DIR}/${CHANNEL_NAME}/current_config_block.pb \
     -c ${CHANNEL_NAME} \
     --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
     --tls \
     --cafile ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
 
   # Decode the protobuf block into JSON format and extract the config
-  configtxlator proto_decode --input ${TEMP_DIR}/current_config_block.pb \
-    --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/current_config.json
+  configtxlator proto_decode --input ${TEMP_DIR}/${CHANNEL_NAME}/current_config_block.pb \
+    --type common.Block | jq .data.data[0].payload.data.config > ${TEMP_DIR}/${CHANNEL_NAME}/current_config.json
 
   # Log that the modified_config.json will be created or overwritten
   log "Creating or overwriting modified_config.json with current_config.json"
   
   # Overwrite or create modified_config.json with the current config
-  cp -f ${TEMP_DIR}/current_config.json ${TEMP_DIR}/modified_config.json
+  cp -f ${TEMP_DIR}/${CHANNEL_NAME}/current_config.json ${TEMP_DIR}/${CHANNEL_NAME}/modified_config.json
   if [ $? -ne 0 ]; then
     log "Error: Failed to create or overwrite modified_config.json"
     pop_fn
@@ -432,7 +432,7 @@ function get-modify-config() {
   fi
   
   # Log the location of the new/overwritten file and prompt for editing
-  log "modified_config.json created/overwritten at ${TEMP_DIR}/modified_config.json. Please edit it before proceeding."
+  log "modified_config.json created/overwritten at ${TEMP_DIR}/${CHANNEL_NAME}/modified_config.json. Please edit it before proceeding."
 
   # Log the completion of the function
   pop_fn
@@ -444,29 +444,29 @@ function create-config-update-envelope() {
   push_fn "Creating configuration update envelope for ${CHANNEL_NAME}"
 
   # Encode the current config JSON into protobuf format
-  configtxlator proto_encode --input ${TEMP_DIR}/current_config.json \
-    --type common.Config --output ${TEMP_DIR}/current_config.pb
+  configtxlator proto_encode --input ${TEMP_DIR}/${CHANNEL_NAME}/current_config.json \
+    --type common.Config --output ${TEMP_DIR}/${CHANNEL_NAME}/current_config.pb
   
   # Encode the modified config JSON into protobuf format
-  configtxlator proto_encode --input ${TEMP_DIR}/modified_config.json \
-    --type common.Config --output ${TEMP_DIR}/modified_config.pb
+  configtxlator proto_encode --input ${TEMP_DIR}/${CHANNEL_NAME}/modified_config.json \
+    --type common.Config --output ${TEMP_DIR}/${CHANNEL_NAME}/modified_config.pb
 
   # Compute the difference (delta) between current and modified configs
   configtxlator compute_update --channel_id ${CHANNEL_NAME} \
-    --original ${TEMP_DIR}/current_config.pb \
-    --updated ${TEMP_DIR}/modified_config.pb \
-    --output ${TEMP_DIR}/config_update.pb
+    --original ${TEMP_DIR}/${CHANNEL_NAME}/current_config.pb \
+    --updated ${TEMP_DIR}/${CHANNEL_NAME}/modified_config.pb \
+    --output ${TEMP_DIR}/${CHANNEL_NAME}/config_update.pb
 
   # Decode the delta protobuf into JSON format
-  configtxlator proto_decode --input ${TEMP_DIR}/config_update.pb \
-    --type common.ConfigUpdate > ${TEMP_DIR}/config_update.json
+  configtxlator proto_decode --input ${TEMP_DIR}/${CHANNEL_NAME}/config_update.pb \
+    --type common.ConfigUpdate > ${TEMP_DIR}/${CHANNEL_NAME}/config_update.json
 
   # Create an envelope JSON with the config update and channel header
-  echo '{"payload":{"header":{"channel_header":{"channel_id":"'"${CHANNEL_NAME}"'", "type":2}},"data":{"config_update":'$(cat ${TEMP_DIR}/config_update.json)'}}}' | jq . > ${TEMP_DIR}/config_update_envelope.json
+  echo '{"payload":{"header":{"channel_header":{"channel_id":"'"${CHANNEL_NAME}"'", "type":2}},"data":{"config_update":'$(cat ${TEMP_DIR}/${CHANNEL_NAME}/config_update.json)'}}}' | jq . > ${TEMP_DIR}/${CHANNEL_NAME}/config_update_envelope.json
   
   # Encode the envelope JSON into protobuf format
-  configtxlator proto_encode --input ${TEMP_DIR}/config_update_envelope.json \
-    --type common.Envelope --output ${TEMP_DIR}/config_update_envelope.pb
+  configtxlator proto_encode --input ${TEMP_DIR}/${CHANNEL_NAME}/config_update_envelope.json \
+    --type common.Envelope --output ${TEMP_DIR}/${CHANNEL_NAME}/config_update_envelope.pb
 
   # Log the completion of the function
   pop_fn
@@ -486,7 +486,7 @@ function sign() {
   export CORE_PEER_MSPCONFIGPATH=${TEMP_DIR}/enrollments/${org}/users/${org}admin/msp
 
   # Sign the configuration envelope
-  peer channel signconfigtx -f ${TEMP_DIR}/config_update_envelope.pb
+  peer channel signconfigtx -f ${TEMP_DIR}/${CHANNEL_NAME}/config_update_envelope.pb
   if [ $? -ne 0 ]; then
     pop_fn "Error: Failed to sign config envelope with ${org}"
     pop_fn
@@ -591,7 +591,7 @@ function update-config() {
    
    # Submit the configuration update to the orderer
    peer channel update \
-     -f ${TEMP_DIR}/config_update_envelope.pb \
+     -f ${TEMP_DIR}/${CHANNEL_NAME}/config_update_envelope.pb \
      -c ${CHANNEL_NAME} \
      --orderer ${ORDERER_NAME}-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
      --tls \
