@@ -1,20 +1,19 @@
-# Trust Com Netowk
+# Trust Com Network
 
  The Trust Com Network is a solution for deploying and managing Hyperledger Fabric networks on Kubernetes. It simplifies the setup, development, and operation of blockchain networks through a streamlined, one-click deployment process and comprehensive operational commands. This guide provides instructions for quick setup and ongoing network management in both development and production-like environments.
 
 ### Objectives:
 - One-Command Setup: Enable rapid deployment of a Hyperledger Fabric network with a single command.
 - Production Reference: Offer a guide for deploying production-style networks on Kubernetes.
-- Development Platform: Provide a cloud-ready environment for developing chaincode, Fabric Gateway, and blockchain applications.
-- Fabric CA Supplement: Extend the Fabric CA Operations and Deployment guides with Kubernetes-specific configurations.
-- Technology Transition: Support migration to Chaincode as a Service (CCaaS) and from Docker daemon-based chaincode to External Chaincode Builders.
+- Development Platform: Provide a cloud-ready environment for developing smart contract, Fabric Gateway, and blockchain applications.
+- Fabric CA ( Certificate Authority ) Supplement: Extend the Fabric CA Operations and Deployment guides with Kubernetes-specific configurations.
 - Platform Flexibility: Run on any Kubernetes cluster, including KIND, Rancher Desktop, or other K8s platforms.
 
 ### Operational Support
 ##### Beyond one-command setup, Trust Com Network provides robust tools for ongoing network operations:
 - Peer Management: Dynamically add or join peers to channels, enabling network scaling.
 - Channel Management: Create, modify, and update channel configurations to adapt to changing requirements.
-- Chaincode Lifecycle: Deploy, invoke, and query chaincode with simplified commands.
+- Smart Contract Lifecycle: Deploy, invoke, and query smart contract with simplified commands.
 - Kubernetes Integration: Leverage Kubernetes for resilient, cloud-ready network deployment and management.
 
 ## Prerequisites:
