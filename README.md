@@ -49,7 +49,9 @@ Launch the network, create a channel, and deploy the [basic-asset-transfer](../a
 
 ./network channel create-channel-msp
 
-./network channel create
+./network channel create-genesis-block
+
+./network channel up
 
 ./network chaincode deploy asset-transfer-basic ../asset-transfer-basic/chaincode-java
 ```
@@ -82,9 +84,14 @@ Creates a new peer and luanch peer to k8s
 ```
 
 ## Available Channel Commands
-Creates a new channel and joins orderers and peers to it.
+Create Genesis Block
 ```shell
-./network channel create
+./network channel create-genesis-block
+```
+
+Join orderers and peers to the created channel to bring it into operation.
+```shell
+./network channel up
 ```
 
 Join peer to channel.
