@@ -103,7 +103,10 @@ function channel_up() {
 function register_org_admins() {
   push_fn "Registering org Admin users"
 
-  register_org_admin ${ORDERER_NAME} ${ORDERER_NAME}admin ${ORDERER_NAME}adminpw
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
+    register_org_admin ${ORDERER_NAME} ${ORDERER_NAME}admin ${ORDERER_NAME}adminpw
+  fi
+  
   for ORG in ${ORG_NAMES}; do
     register_org_admin ${ORG} ${ORG}admin ${ORG}adminpw
   done
@@ -134,7 +137,10 @@ function register_org_admin() {
 function enroll_org_admins() {
   push_fn "Enrolling org Admin users"
 
-  enroll_org_admin orderer  ${ORDERER_NAME} ${ORDERER_NAME}admin ${ORDERER_NAME}adminpw
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
+    enroll_org_admin orderer  ${ORDERER_NAME} ${ORDERER_NAME}admin ${ORDERER_NAME}adminpw
+  fi
+  
   for ORG in ${ORG_NAMES}; do
     enroll_org_admin peer     ${ORG} ${ORG}admin ${ORG}adminpw
   done
@@ -214,7 +220,10 @@ EOF
 function create_channel_MSP() {
   push_fn "Creating channel MSP"
 
-  create_channel_org_MSP ${ORDERER_NAME} orderer $NS
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
+    create_channel_org_MSP ${ORDERER_NAME} orderer $NS
+  fi
+  
   for ORG in ${ORG_NAMES}; do
     create_channel_org_MSP ${ORG} peer $NS
   done
