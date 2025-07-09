@@ -143,7 +143,7 @@ function network_up() {
   init_namespace
   init_storage_volumes
   
-  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
     load_org_config "$ORDERER_NAME"
   fi
   for ORG in ${ORG_NAMES}; do
@@ -157,7 +157,7 @@ function network_up() {
   fi
 
   # Network TLS CAs
-  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
     init_tls_cert_issuers_org ${ORDERER_NAME}
   fi
   for ORG in ${ORG_NAMES}; do
@@ -167,7 +167,7 @@ function network_up() {
 
 
   # Network ECert CAs
-  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
     launch_ECert_CAs_org ${ORDERER_NAME}
   fi
   for ORG in ${ORG_NAMES}; do
@@ -177,7 +177,7 @@ function network_up() {
 
 
   # enroll orderer cert
-  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
     enroll_bootstrap_ECert_CA_users ${ORDERER_NAME}
   fi
   for ORG in ${ORG_NAMES}; do
@@ -187,9 +187,12 @@ function network_up() {
 
 
   # Trust Com Network
-  for ((i=1; i<=NUM_ORDERERS; i++)); do
-    create_local_MSP_orderer ${i}
-  done
+  if [[ -n "$ENV_NUM_ORDERERS" && "$ENV_NUM_ORDERERS" =~ ^[0-9]+$ && "$ENV_NUM_ORDERERS" -gt 0 ]]; then
+    for ((i=1; i<=NUM_ORDERERS; i++)); do
+      create_local_MSP_orderer ${i}
+    done
+  fi
+ 
 
   for ORG in ${ORG_NAMES}; do
     for ((i=1; i<=NUM_PEERS_PER_ORG; i++)); do
