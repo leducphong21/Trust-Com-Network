@@ -21,7 +21,12 @@ function channel_command_group() {
     create_channel_MSP
     log "🏁 - Channel MSP is ready."
 
-  elif [ "${COMMAND}" == "create" ]; then
+  elif [ "${COMMAND}" == "create-genesis-block" ]; then
+    log "Creating channel \"${CHANNEL_NAME}\":"
+    create_genesis_block
+    log "🏁 - Channel is ready."
+
+  elif [ "${COMMAND}" == "up" ]; then
     log "Creating channel \"${CHANNEL_NAME}\":"
     channel_up
     log "🏁 - Channel is ready."
@@ -95,7 +100,6 @@ function create_org_admin() {
 
 
 function channel_up() {
-  create_genesis_block
   join_channel_orderers
   join_channel_peers
 }
