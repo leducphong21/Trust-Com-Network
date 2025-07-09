@@ -143,7 +143,9 @@ function network_up() {
   init_namespace
   init_storage_volumes
   
-  load_org_config ${ORDERER_NAME}
+  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+    load_org_config "$ORDERER_NAME"
+  fi
   for ORG in ${ORG_NAMES}; do
     load_org_config ${ORG}
   done
@@ -154,10 +156,10 @@ function network_up() {
     apply_k8s_builders
   fi
 
-  
-
   # Network TLS CAs
-  init_tls_cert_issuers_org ${ORDERER_NAME}
+  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+    init_tls_cert_issuers_org ${ORDERER_NAME}
+  fi
   for ORG in ${ORG_NAMES}; do
     init_tls_cert_issuers_org ${ORG}
   done
@@ -165,7 +167,9 @@ function network_up() {
 
 
   # Network ECert CAs
-  launch_ECert_CAs_org ${ORDERER_NAME}
+  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+    launch_ECert_CAs_org ${ORDERER_NAME}
+  fi
   for ORG in ${ORG_NAMES}; do
     launch_ECert_CAs_org ${ORG}
   done
@@ -173,7 +177,9 @@ function network_up() {
 
 
   # enroll orderer cert
-  enroll_bootstrap_ECert_CA_users ${ORDERER_NAME}
+  if [[ -n "$ORDERER_NAME" && "$ORDERER_NAME" =~ ^[0-9]+$ && "$ORDERER_NAME" -gt 0 ]]; then
+    enroll_bootstrap_ECert_CA_users ${ORDERER_NAME}
+  fi
   for ORG in ${ORG_NAMES}; do
     enroll_bootstrap_ECert_CA_users ${ORG}
   done
@@ -200,7 +206,7 @@ function network_up() {
       launch_peers ${ORG} ${i}
     done
   done
-  
+
 }
 
 function stop_services() {
