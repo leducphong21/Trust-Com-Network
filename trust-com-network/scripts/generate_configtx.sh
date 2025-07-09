@@ -68,7 +68,7 @@ EOF
   # Tạo danh sách Endorsement Rule
   ENDORSEMENT_RULE="      Rule: \"OR("
   local i=0
-  for ORG_NAME in ${ORG_NAMES}; do
+  for ORG_NAME in ${ORGS_IN_CHANNEL}; do
     ENDORSEMENT_RULE="${ENDORSEMENT_RULE}'${ORG_NAME}MSP.peer'"
     if [ $i -lt $((NUM_ORGS-1)) ]; then
       ENDORSEMENT_RULE="${ENDORSEMENT_RULE}, "
@@ -79,13 +79,13 @@ EOF
 
   # Tạo danh sách Organizations trong Profiles
   ORG_LIST=""
-  for ORG_NAME in ${ORG_NAMES}; do
+  for ORG_NAME in ${ORGS_IN_CHANNEL}; do
     ORG_LIST="${ORG_LIST}        - *${ORG_NAME}
 "
   done
 
   # Tạo danh sách tổ chức động từ template
-  ORG_SECTIONS=$(for ORG_NAME in ${ORG_NAMES}; do
+  ORG_SECTIONS=$(for ORG_NAME in ${ORGS_IN_CHANNEL}; do
     cat "$TEMPLATE_FILE" | sed "s/{{CHANNEL_NAME}}/${CHANNEL_NAME}/g" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS} /g"
   done)
 
