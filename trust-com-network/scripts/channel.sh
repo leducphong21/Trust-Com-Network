@@ -382,10 +382,10 @@ function join_channel_peer() {
 
   peer channel join \
     --blockpath   ${TEMP_DIR}/${CHANNEL_NAME}/genesis_block.pb \
-    --orderer     org0-orderer1.${DOMAIN} \
+    --orderer     ${ORDERER_NAME}-orderer1.${DOMAIN} \
     --connTimeout ${ORDERER_TIMEOUT} \
     --tls         \
-    --cafile      ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
+    --cafile      ${TEMP_DIR}/${CHANNEL_NAME}/channel-msp/ordererOrganizations/${ORDERER_NAME}/orderers/${ORDERER_NAME}-orderer1/tls/signcerts/tls-cert.pem
 }
 
 function fetch_channel_config() {

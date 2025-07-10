@@ -77,6 +77,18 @@ For Rancher: Preferences -> Kubernetes Settings -> Reset Kubernetes  OR ...
 ./network cluster clean
 ```
 
+## Available ORG Commands
+Generate a config update to add a new org
+```shell
+./network org generate-org-config <org>
+```
+
+Generate config update to add a new org
+```shell
+./network org generate-update-config-add-new-org land
+```
+
+
 ## Available Peer Commands
 Creates a new peer and luanch peer to k8s
 ```shell

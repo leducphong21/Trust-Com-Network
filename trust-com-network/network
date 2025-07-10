@@ -119,7 +119,7 @@ function print_help() {
 . scripts/generate_kube_files.sh
 . scripts/generate_configtx.sh  # Thêm import file mới
 . scripts/generate_ccp.sh
-
+. scripts/organization.sh
 
 
 # check for kind, kubectl, etc.
@@ -170,6 +170,8 @@ elif [[ "${MODE}" == "chaincode" || "${MODE}" == "cc" ]]; then
 
 elif [ "${MODE}" == "anchor" ]; then
   update_anchor_peers $@
+elif [ "${MODE}" == "org" ]; then
+  org_command_group $@
 
 elif [ "${MODE}" == "application" ]; then
   log "Getting application connection information:"
