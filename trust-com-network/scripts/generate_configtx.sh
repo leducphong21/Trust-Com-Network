@@ -86,7 +86,7 @@ EOF
 
   # Tạo danh sách tổ chức động từ template
   ORG_SECTIONS=$(for ORG_NAME in ${ORGS_IN_CHANNEL}; do
-    cat "$TEMPLATE_FILE" | sed "s/{{CHANNEL_NAME}}/${CHANNEL_NAME}/g" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS} /g"
+    cat "$TEMPLATE_FILE" | sed "s/{{CHANNEL_NAME}}/${CHANNEL_NAME}/g" | sed "s/{{ORG_NAME}}/${ORG_NAME}/g" | sed "s/\${NS}/${NS}/g"
   done)
 
   # Ghi toàn bộ nội dung YAML vào file
