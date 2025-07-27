@@ -75,7 +75,7 @@ function deploy_chaincode() {
   local cc_package=${temp_folder}/${cc_name}.tgz
 
   # Tăng sequence một lần cho toàn bộ quá trình deploy
-  local sequence=$(get_next_sequence)
+  local sequence=$3
   
   prepare_chaincode_image ${cc_folder} ${cc_name}
   package_chaincode       ${cc_name} ${cc_label} ${cc_package}
@@ -142,7 +142,7 @@ function activate_chaincode() {
   set_chaincode_id    ${cc_package}
   install_chaincode   ${cc_package}
   approve_chaincode   ${cc_name} ${CHAINCODE_ID} ${sequence}
-  commit_chaincode    ${cc_name} ${sequence}
+  # commit_chaincode    ${cc_name} ${sequence}
 }
 
 function query_chaincode() {
@@ -412,17 +412,17 @@ function set_chaincode_id() {
   CHAINCODE_ID=${cc_label}:${cc_sha256}
 }
 
-get_next_sequence() {
-  local sequence_file="${TEMP_DIR}/sequence.txt"
+# get_next_sequence() {
+#   local sequence_file="${TEMP_DIR}/sequence.txt"
   
-  if [ ! -f "$sequence_file" ]; then
-    echo 0 > "$sequence_file"
-  fi
+#   if [ ! -f "$sequence_file" ]; then
+#     echo 0 > "$sequence_file"
+#   fi
   
-  local current_sequence=$(cat "$sequence_file")
-  local next_sequence=$((current_sequence + 1))
-  echo "$next_sequence" > "$sequence_file"
+#   local current_sequence=$(cat "$sequence_file")
+#   local next_sequence=$((current_sequence + 1))
+#   echo "$next_sequence" > "$sequence_file"
   
-  echo "$next_sequence"
-}
+#   echo "$next_sequence"
+# }
 
