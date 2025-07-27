@@ -66,6 +66,7 @@ context ORGS_IN_CHANNEL               "${ENV_ORGS_IN_CHANNEL}"
 context NUM_PEERS_PER_ORG             ${ENV_NUM_PEERS_PER_ORG}
 context ORDERER_NAME                  ${ENV_ORDERER_NAME}
 context NUM_ORDERERS                  ${ENV_NUM_ORDERERS}
+context ORDERER_TARGET                ${ENV_ORDERER_TARGET}
 
 # Calculate the number of organizations from ORG_NAMES if not overridden
 if [[ -z "${TEST_NETWORK_NUM_ORGS}" ]]; then
