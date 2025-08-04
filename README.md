@@ -53,7 +53,9 @@ Launch the network, create a channel, and deploy the [basic-asset-transfer](../a
 
 ./network channel up
 
-./network chaincode deploy asset-transfer-basic ../asset-transfer-basic/chaincode-java
+./network chaincode deploy asset-transfer-basic ../asset-transfer-basic/chaincode-java 1
+
+./network chaincode commit asset-transfer-basic 1
 ```
 
 Invoke and query chaincode:
@@ -85,7 +87,7 @@ Generate a config update to add a new org
 
 Generate config update to add a new org
 ```shell
-./network org generate-update-config-add-new-org land
+./network org generate-update-config-add-new-org <org_name>
 ```
 
 
@@ -93,6 +95,17 @@ Generate config update to add a new org
 Creates a new peer and luanch peer to k8s
 ```shell
 ./network add-peer <org> <peer-index>
+```
+
+## Available Chaincode Commands
+Deploy chaincode
+```shell
+./network chaincode deploy <chaincode_name> <chaincode_path> <sequense>
+```
+
+Commit chaincode
+```shell
+./network chaincode commit <chaincode_name> <sequense>
 ```
 
 ## Available Channel Commands

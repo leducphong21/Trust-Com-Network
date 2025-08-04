@@ -5,7 +5,7 @@ set -euo pipefail
 function generate_kube_files() {
   echo "📁 Generating Kubernetes files..."
   mkdir -p kube
-  cp templates/kube/*.yaml kube
+  cp templates/kube/${CLUSTER_RUNTIME}/*.yaml kube
 
   mkdir -p kube/${ORDERER_NAME}
   mkdir -p config/${ORDERER_NAME}
@@ -19,38 +19,38 @@ function generate_kube_files() {
     sed \
       -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
       -e "s/{{ORDERER_NUM}}/${i}/g" \
-      templates/kube/orderer/orderer-template.yaml \
+      templates/kube/${CLUSTER_RUNTIME}/orderer/orderer-template.yaml \
       > "${ORG_DIR}/${ORDERER_NAME}-orderer${i}.yaml"
   done
 
   # Generate CA for org0
   sed \
     -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
-    templates/kube/orderer/ca-template.yaml \
+    templates/kube/${CLUSTER_RUNTIME}/orderer/ca-template.yaml \
     > "${ORG_DIR}/${ORDERER_NAME}-ca.yaml"
 
   # Generate TLS Issuer for org0
   sed \
     -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
-    templates/kube/orderer/tls-cert-issuer-template.yaml \
+    templates/kube/${CLUSTER_RUNTIME}/orderer/tls-cert-issuer-template.yaml \
     > "${ORG_DIR}/${ORDERER_NAME}-tls-cert-issuer.yaml"
 
   # Generate Root TLS Issuer for org0
   sed \
     -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
-    templates/kube/orderer/root-tls-cert-issuer-template.yaml \
+    templates/kube/${CLUSTER_RUNTIME}/orderer/root-tls-cert-issuer-template.yaml \
     > "${ORG_DIR}/${ORDERER_NAME}-root-tls-cert-issuer.yaml"
 
   # Generate Scrub Volumes Job for org0
   sed \
     -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
-    templates/kube/orderer/job-scrub-fabric-volumes-template.yaml \
+    templates/kube/${CLUSTER_RUNTIME}/orderer/job-scrub-fabric-volumes-template.yaml \
     > "${ORG_DIR}/${ORDERER_NAME}-job-scrub-fabric-volumes.yaml"
 
   # Generate PVC for org0
   sed \
     -e "s/{{ORDERER}}/${ORDERER_NAME}/g" \
-    templates/kube/orderer/pvc-fabric-template.yaml \
+    templates/kube/${CLUSTER_RUNTIME}/orderer/pvc-fabric-template.yaml \
     > "kube/pvc-fabric-${ORDERER_NAME}.yaml"
 
   # Generate Config Map for org0
@@ -78,44 +78,44 @@ function generate_kube_files() {
       sed \
         -e "s/{{ORG_NAME}}/${ORG}/g" \
         -e "s/{{PEER_NUM}}/${i}/g" \
-        templates/kube/org/peer-template.yaml \
+        templates/kube/${CLUSTER_RUNTIME}/org/peer-template.yaml \
         > "${ORG_DIR}/${ORG}-peer${i}.yaml"
     done
 
     ## Generate CA
     sed \
       -e "s/{{ORG_NAME}}/${ORG}/g" \
-      templates/kube/org/ca-template.yaml \
+      templates/kube/${CLUSTER_RUNTIME}/org/ca-template.yaml \
       > "${ORG_DIR}/${ORG}-ca.yaml"
 
     ## TLS Issuer
     sed \
       -e "s/{{ORG_NAME}}/${ORG}/g" \
-      templates/kube/org/tls-cert-issuer-template.yaml \
+      templates/kube/${CLUSTER_RUNTIME}/org/tls-cert-issuer-template.yaml \
       > "${ORG_DIR}/${ORG}-tls-cert-issuer.yaml"
 
     ## Install builder
     sed \
       -e "s/{{ORG_NAME}}/${ORG}/g" \
-      templates/kube/org/install-k8s-builder-template.yaml \
+      templates/kube/${CLUSTER_RUNTIME}/org/install-k8s-builder-template.yaml \
       > "${ORG_DIR}/${ORG}-install-k8s-builder.yaml"
 
     # Generate chaincode-template Map
     sed \
       -e "s/{{ORG_NAME}}/${ORG}/g" \
-      templates/kube/org/cc-template.yaml \
+      templates/kube/${CLUSTER_RUNTIME}/org/cc-template.yaml \
       > "${ORG_DIR}/${ORG}-cc-template.yaml"
 
     ## Scrub Volumes Job
     sed \
       -e "s/{{ORG_NAME}}/${ORG}/g" \
-      templates/kube/org/job-scrub-fabric-volumes-template.yaml \
+      templates/kube/${CLUSTER_RUNTIME}/org/job-scrub-fabric-volumes-template.yaml \
       > "${ORG_DIR}/${ORG}-job-scrub-fabric-volumes.yaml"
 
     ## Generate PVC
     sed \
       -e "s/{{ORG_NAME}}/${ORG}/g" \
-      templates/kube/org/pvc-fabric-template.yaml \
+      templates/kube/${CLUSTER_RUNTIME}/org/pvc-fabric-template.yaml \
       > "kube/pvc-fabric-${ORG}.yaml"
 
     echo "✅ Done for ${ORG}"
