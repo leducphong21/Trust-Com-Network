@@ -269,7 +269,7 @@ function network_down() {
 
   delete_namespace
 
-  rm -rf $PWD/build
+  rm -rf $TEMP_DIR
   rm -rf $PWD/kube
   rm -rf $PWD/config
 }

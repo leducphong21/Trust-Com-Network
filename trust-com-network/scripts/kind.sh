@@ -9,7 +9,7 @@ function kind_create() {
   push_fn  "Creating cluster \"${CLUSTER_NAME}\""
 
   # prevent the next kind cluster from using the previous Fabric network's enrollments.
-  rm -rf $PWD/build
+  rm -rf $TEMP_DIR
 
   # todo: always delete?  Maybe return no-op if the cluster already exists?
   kind delete cluster --name $CLUSTER_NAME

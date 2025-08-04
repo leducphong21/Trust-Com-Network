@@ -45,8 +45,8 @@ data:
   CORE_PEER_CHAINCODEADDRESS: {{ORG_NAME}}-peer{{PEER_NUM}}:7052
   CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
   # bootstrap peer is the other peer in the same org
-  CORE_PEER_GOSSIP_BOOTSTRAP: {{ORG_NAME}}-peer2:7051
-  CORE_PEER_GOSSIP_EXTERNALENDPOINT: {{ORG_NAME}}-peer{{PEER_NUM}}.${NS}.svc.cluster.local:7051
+  CORE_PEER_GOSSIP_BOOTSTRAP: {{ORG_NAME}}-peer1:7051
+  CORE_PEER_GOSSIP_EXTERNALENDPOINT: {{ORG_NAME}}-peer1.${NS}.svc.cluster.local:7051
   CORE_PEER_LOCALMSPID: {{ORG_NAME}}MSP
   CORE_PEER_MSPCONFIGPATH: /var/hyperledger/fabric/organizations/peerOrganizations/{{ORG_NAME}}.example.com/peers/{{ORG_NAME}}-peer{{PEER_NUM}}.{{ORG_NAME}}.example.com/msp
   CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
