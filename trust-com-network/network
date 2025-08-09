@@ -121,6 +121,7 @@ function print_help() {
 . scripts/generate_configtx.sh  # Thêm import file mới
 . scripts/generate_ccp.sh
 . scripts/organization.sh
+. scripts/monitoring.sh
 
 
 # check for kind, kubectl, etc.
@@ -190,10 +191,15 @@ elif [ "${MODE}" == "generate-ccp" ]; then
   generate_ccp
   log "🏁 - Kubernetes files are ready."
 
-  elif [ "${MODE}" == "generate-config" ]; then
-  log "Generating connection profiles"
+elif [ "${MODE}" == "generate-config" ]; then
+  log "Generating channel config"
   generate_configtx
-  log "🏁 - Kubernetes files are ready."
+  log "🏁 - Channel config files are ready."
+
+elif [ "${MODE}" == "monitoring" ]; then
+  log "Generating channel config"
+  install_monitoring
+  log "🏁 - Channel config files are ready."
 
 elif [ "${MODE}" == "add-peer" ]; then
   org=$1
