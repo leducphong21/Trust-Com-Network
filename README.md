@@ -149,4 +149,8 @@ Submits the signed configuration update envelope to the channel.
 ./network channel update-config <org>
 ```
 
-kubectl port-forward -n bank svc/bank-peer1 5984:5984
+## Available Setup Monitoring Commands
+Install monitoring with prometheus and grafana
+```shell
+./network monitoring
+```
