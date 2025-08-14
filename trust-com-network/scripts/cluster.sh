@@ -81,7 +81,7 @@ function apply_nginx_ingress() {
   # kind : 'kind'
   # kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.1.2/deploy/static/provider/cloud/deploy.yaml
 
-  kubectl apply -f kube/${CLUSTER_RUNTIME}/ingress-nginx-${CLUSTER_RUNTIME}.yaml
+  kubectl apply -f kube/ingress-nginx-${CLUSTER_RUNTIME}.yaml
 
   pop_fn
 }
@@ -89,7 +89,7 @@ function apply_nginx_ingress() {
 function delete_nginx_ingress() {
   push_fn "Deleting ${CLUSTER_RUNTIME} ingress controller"
 
-  cat kube/${CLUSTER_RUNTIME}/ingress-nginx-${CLUSTER_RUNTIME}.yaml | kubectl delete -f -
+  cat kube/ingress-nginx-${CLUSTER_RUNTIME}.yaml | kubectl delete -f -
 
   pop_fn
 }
