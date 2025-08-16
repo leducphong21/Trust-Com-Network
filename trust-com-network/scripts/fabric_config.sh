@@ -30,9 +30,8 @@ function init_storage_volumes() {
   # as the 'standard' storage class, and in Rancher as the 'local-path' storage class.
   if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
     export STORAGE_CLASS="standard"
-
-  elif [ "${CLUSTER_RUNTIME}" == "k3s" ]; then
-    export STORAGE_CLASS="local-path"
+  elif [ "${CLUSTER_RUNTIME}" == "aws" ]; then
+    export STORAGE_CLASS="gp2"
 
   else
     echo "Unknown CLUSTER_RUNTIME ${CLUSTER_RUNTIME}"
