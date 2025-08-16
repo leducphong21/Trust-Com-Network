@@ -1,0 +1,18 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: fabric
+  region: ap-southeast-1
+  version: "1.30"
+
+nodeGroups:
+  - name: fabric-nodes
+    instanceType: t3.large
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 3
+    volumeSize: 20
+    ssh:
+      allow: true
+      publicKeyName: fabric
