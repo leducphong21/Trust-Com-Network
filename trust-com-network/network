@@ -130,6 +130,10 @@ check_prereqs
 # Initialize the logging system - control output to 'network.log' and everything else to 'network-debug.log'
 logging_init
 
+# Greet the user
+log "Hello! Welcome to Trust Com Network"
+log
+
 ## Parse mode
 if [[ $# -lt 1 ]] ; then
   print_help
